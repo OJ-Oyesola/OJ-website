@@ -5,10 +5,30 @@
   "use strict";
 
   var CFG = window.OJ_CONFIG || {};
-  var COLLECTIONS = window.OJ_COLLECTIONS || {};
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Portfolio is driven by the on-disk shoot folders (see assets/js/galleries.js).
+     Each gallery maps to one top-level folder and lists every real photo in it. */
+  var GALLERIES = window.OJ_GALLERIES || [];
+  var HEROES = window.OJ_HEROES || [];
+  var SHOWCASE = window.OJ_SHOWCASE || [];
+
+  function galById(id) {
+    for (var i = 0; i < GALLERIES.length; i++) if (GALLERIES[i].id === id) return GALLERIES[i];
+    return null;
+  }
+  function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(arr) {
+    var a = arr.slice(), j, t;
+    for (var i = a.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
 
   /* ---------- Config wiring ---------- */
   function applyConfig() {
@@ -70,15 +90,45 @@
     });
   }
 
-  /* ---------- Hero load ---------- */
+  /* ---------- Hero ----------
+     The hero photo is picked from the real "Hero Images" set and rotates on every
+     page load, then the reveal animation waits for that image to finish loading. */
   function initHero() {
     var hero = $("#hero");
     if (!hero) return;
     var img = $(".hero-media img", hero);
     var mark = function () { setTimeout(function () { hero.classList.add("is-loaded"); }, prefersReduced ? 0 : 120); };
-    if (img && img.complete) mark();
-    else if (img) img.addEventListener("load", mark);
-    else mark();
+    if (!img) { mark(); return; }
+    var settle = function () { mark(); };
+    img.addEventListener("load", settle);
+    img.addEventListener("error", function () {
+      if (img.getAttribute("data-fallback") !== "1") {
+        img.setAttribute("data-fallback", "1");
+        img.src = "assets/img/hero.jpg"; /* graceful fallback */
+      }
+      settle();
+    });
+    if (HEROES.length) {
+      img.src = pick(HEROES); /* the hero photo rotates on every page load */
+    }
+    if (img.complete) { img.removeEventListener("load", settle); settle(); }
+  }
+
+  /* ---------- Scroll indicator ---------- */
+  function initScrollCue() {
+    var cue = $("#scrollCue");
+    if (!cue) return;
+    var update = function () {
+      cue.classList.toggle("is-hidden", window.scrollY > 120);
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+    cue.addEventListener("click", function () {
+      var target = $("#selected") || $("#work");
+      if (!target) return;
+      try { target.scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth" }); }
+      catch (e) { target.scrollIntoView(); }
+    });
   }
 
   /* ---------- Scroll reveals ---------- */
@@ -122,6 +172,83 @@
       });
     }, { threshold: 0.6 });
     nums.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---------- Selected work (featured frames) ---------- */
+  function showcaseList() {
+    var wanted = (SHOWCASE.length ? SHOWCASE : GALLERIES.map(function (g) { return g.id; }));
+    var list = [], seen = {};
+    wanted.forEach(function (id) {
+      var g = galById(id);
+      if (g && list.length < 3 && !seen[g.id]) { list.push(g); seen[g.id] = true; }
+    });
+    GALLERIES.forEach(function (g) {
+      if (list.length < 3 && !seen[g.id]) { list.push(g); seen[g.id] = true; }
+    });
+    return list;
+  }
+
+  function renderSelectedWork() {
+    var wrap = $("#features");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    showcaseList().forEach(function (g, i) {
+      var fig = document.createElement("figure");
+      fig.className = "feature feature-" + (i + 1) + " reveal";
+      fig.setAttribute("tabindex", "0");
+      fig.setAttribute("role", "button");
+      fig.setAttribute("aria-label", "Open " + g.title + " gallery");
+      if (i > 0) fig.setAttribute("data-delay", String(i));
+      fig.setAttribute("data-collection", g.id);
+
+      var img = document.createElement("img");
+      img.src = pick(g.files); /* randomised cover each page load */
+      img.alt = g.title + " — " + cap(g.cat) + " collection";
+      img.loading = "lazy";
+
+      var capEl = document.createElement("figcaption");
+      var inner = document.createElement("div");
+      var t = document.createElement("div"); t.className = "f-title"; t.textContent = g.title;
+      var c = document.createElement("div"); c.className = "f-cat"; c.textContent = cap(g.cat);
+      inner.appendChild(t); inner.appendChild(c);
+      var idx = document.createElement("span"); idx.className = "f-index";
+      idx.textContent = "Nº " + String(i + 1).padStart(2, "0");
+      capEl.appendChild(inner); capEl.appendChild(idx);
+
+      fig.appendChild(img); fig.appendChild(capEl);
+      wrap.appendChild(fig);
+    });
+  }
+
+  /* ---------- Portfolio tiles ---------- */
+  function renderPortfolio() {
+    var box = $("#masonry");
+    if (!box) return;
+    box.innerHTML = "";
+    GALLERIES.forEach(function (g) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tile";
+      b.setAttribute("data-cat", g.cat);
+      b.setAttribute("data-collection", g.id);
+      b.setAttribute("aria-label", g.title + " — " + cap(g.cat) + " collection");
+
+      var img = document.createElement("img");
+      img.src = pick(g.files); /* randomised cover each page load */
+      img.alt = g.title + " — " + cap(g.cat) + " collection";
+      img.loading = "lazy";
+
+      var veil = document.createElement("span"); veil.className = "tile-veil";
+      var meta = document.createElement("span"); meta.className = "tile-meta";
+      var tt = document.createElement("span"); tt.className = "t-title"; tt.textContent = g.title;
+      var tc = document.createElement("span"); tc.className = "t-cat"; tc.textContent = cap(g.cat);
+      meta.appendChild(tt); meta.appendChild(tc);
+
+      b.appendChild(img); b.appendChild(veil); b.appendChild(meta);
+      box.appendChild(b);
+    });
+    var count = $("#filterCount");
+    if (count) count.textContent = GALLERIES.length + (GALLERIES.length === 1 ? " collection" : " collections");
   }
 
   /* ---------- Portfolio filter ---------- */
@@ -208,72 +335,49 @@
     });
   }
 
-  /* ---------- Collection gallery view (bento) ---------- */
+  /* ---------- Collection gallery view (fluid, every photo shown) ---------- */
   var cv = { box: null, current: null };
 
-  function bentoSpans(w, h, i, total) {
-    /* returns [colSpan, rowSpan] for a pleasing dense bento layout */
-    var ratio = (w || 1) / (h || 1);
-    if (total === 1) return [4, 4];
-    if (total === 2) return [3, 3];
-    if (i === 0) {                       /* hero frame */
-      if (ratio >= 1.15) return [4, 3];
-      if (ratio <= 0.85) return [3, 4];
-      return [3, 3];
-    }
-    if (ratio >= 1.15) return [3, 2];
-    if (ratio <= 0.85) return [2, 3];
-    return [2, 2];
-  }
-
-  function openCollection(slug) {
-    var data = COLLECTIONS[slug];
+  function openCollection(id) {
+    var data = galById(id);
     if (!data) return;
-    cv.current = slug;
+    cv.current = id;
     var grid = $("#cvGrid");
     grid.innerHTML = "";
 
-    $("#cvTitle").textContent = data.title || slug;
-    $("#cvCat").textContent = (data.cat || "").toUpperCase();
+    $("#cvTitle").textContent = data.title;
+    $("#cvCat").textContent = cap(data.cat);
     $("#cvDesc").textContent = data.desc || "";
-    var imgs = data.images || [];
-    $("#cvCount").textContent = imgs.length + (imgs.length === 1 ? " frame" : " frames");
 
-    var maxCols = window.matchMedia("(max-width: 48rem)").matches ? 2 : 6;
-    imgs.forEach(function (im, i) {
-      var spans = bentoSpans(im.w, im.h, i, imgs.length);
-      var colSpan = Math.min(spans[0], maxCols);
-      var rowSpan = spans[1];
-      if (maxCols === 2) rowSpan = Math.min(rowSpan, colSpan >= 2 ? 3 : 4);
+    /* every photo from the folder, re-shuffled each time the gallery is opened */
+    var photos = shuffle(data.files).map(function (src) {
+      return { src: src, title: data.title, cat: cap(data.cat), desc: data.desc || "", caption: data.title };
+    });
+    var n = photos.length;
+    $("#cvCount").textContent = n + (n === 1 ? " frame" : " frames");
+
+    photos.forEach(function (photo, i) {
       var cell = document.createElement("button");
       cell.type = "button";
       cell.className = "cv-item";
       cell.setAttribute("aria-label", (data.title || "Collection") + " — photo " + (i + 1));
-      cell.style.gridColumn = "span " + colSpan;
-      cell.style.gridRow = "span " + rowSpan;
-      cell.innerHTML =
-        '<img src="' + im.src + '" alt="' + (data.title || "") + " — photo " + (i + 1) + '" loading="lazy">' +
-        '<span class="cv-num">' + String(i + 1).padStart(2, "0") + "</span>";
-      cell.addEventListener("click", function () {
-        lb.open(imgs.map(function (x) {
-          return { src: x.src, title: data.title, cat: (data.cat || "").toUpperCase(), desc: "", caption: data.title };
-        }), i);
-      });
+      var img = document.createElement("img");
+      img.src = photo.src;
+      img.alt = (data.title || "") + " — photo " + (i + 1);
+      img.loading = "lazy";
+      var num = document.createElement("span");
+      num.className = "cv-num";
+      num.textContent = String(i + 1).padStart(2, "0");
+      cell.appendChild(img);
+      cell.appendChild(num);
+      cell.addEventListener("click", (function (idx) {
+        return function () { lb.open(photos, idx); };
+      })(i));
       grid.appendChild(cell);
     });
 
     var note = $("#cvNote");
-    if (imgs.length < 3) {
-      note.innerHTML = (imgs.length === 1
-        ? "A selected frame from this collection — more is being curated."
-        : "Selected frames from this collection — more is being curated.") +
-        '<br><a class="text-link" href="#contact" id="cvCta">Book a session to begin yours ' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></a>';
-      note.hidden = false;
-      $("#cvCta").addEventListener("click", closeCollection);
-    } else {
-      note.hidden = true;
-    }
+    if (note) note.hidden = true; /* full set present — no "more being curated" note */
 
     cv.box.classList.add("is-open");
     document.body.style.overflow = "hidden";
@@ -293,9 +397,19 @@
     if (!box) return;
     cv.box = box;
     $$("[data-collection]").forEach(function (el) {
+      function open() {
+        openCollection(el.getAttribute("data-collection"));
+      }
       el.addEventListener("click", function (e) {
         e.preventDefault();
-        openCollection(el.getAttribute("data-collection"));
+        open();
+      });
+      /* tiles are <button>s (Enter/Space handled natively); support non-button openers */
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
       });
     });
     $("#cvBack").addEventListener("click", closeCollection);
@@ -362,7 +476,6 @@
     if (!form) return;
     var success = $("#formSuccess");
 
-    /* returning visitor who already inquired → show the receipt state */
     try {
       if (window.localStorage.getItem(INQUIRY_FLAG) === "1") {
         form.hidden = true;
@@ -373,7 +486,6 @@
     window.OJForms.handle(form, success, "New Booking Inquiry — OJ_Oyesola Photography",
       "No email service connected yet — your email app is opening with the inquiry pre-filled (see README to connect Formspree).");
 
-    /* mark as sent on the form's own submit event too (covers the fallback path) */
     form.addEventListener("submit", function () {
       try { window.localStorage.setItem(INQUIRY_FLAG, "1"); } catch (e) {}
     });
@@ -407,10 +519,11 @@
 
   /* ---------- Boot ---------- */
   document.addEventListener("DOMContentLoaded", function () {
+    renderSelectedWork();   /* build the featured frames BEFORE observers/filters run */
+    renderPortfolio();      /* build every portfolio tile from the gallery folders */
     applyConfig();
     initHeader();
     initMenu();
-    initHero();
     initReveals();
     initCounters();
     initFilters();
@@ -420,5 +533,7 @@
     initFaq();
     initBookingForm();
     initNavSpy();
+    initHero();
+    initScrollCue();
   });
 })();
