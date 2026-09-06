@@ -34,8 +34,8 @@ python3 -m http.server 8000
 > `http://localhost` or HTTPS — both are satisfied on GitHub Pages and any
 > real host. Opening `client.html` directly from disk (`file://`) will not work.
 
-**Try the demo gallery:** open `client.html` → email `demo@oj-oyesola.com`,
-code `OJ-DEMO`.
+**Try the demo galleries:** open `client.html` → email `demo@oj-oyesola.com`,
+code `OJ-DEMO` (portrait session) or `OJ-WEDDING` (wedding).
 
 ---
 
@@ -127,22 +127,22 @@ To add more photos inside a collection later, the lightbox can be extended
 
 ---
 
-## Brand font — “Wedding Ampersand”
+## Brand font — “Wedding Ampersand” ✓ installed
 
-The wordmark and script accents currently use *Great Vibes* as a stand-in.
-To install your real font:
+The real font lives at `assets/fonts/wedding-ampersand.ttf` (+ optimized
+`.woff2`) and is already wired in everywhere the script style appears: the
+wordmark, the hero “forever.”, the “Yours, OJ.” sign-off, and contract
+signatures. If you ever replace the file, keep the same names.
 
-1. Put `Wedding Ampersand Font.ttf` at `assets/fonts/wedding-ampersand.ttf`
-   (and ideally a `.woff2` copy — convert with
-   [fonttools](https://fonttools.readthedocs.io): `pip install fonttools brotli` then
-   `python -c "from fontTools.ttLib import TTFont; f=TTFont('Wedding Ampersand Font.ttf'); f.flavor='woff2'; f.save('assets/fonts/wedding-ampersand.woff2')"`).
-2. Nothing else — the CSS stack `'Wedding Ampersand', 'Great Vibes'` picks it up
-   automatically everywhere it's referenced (`.brand`, `.hero-title .forever`,
-   `.signoff`, signatures).
-
-> **Licensing note:** *Wedding Ampersand* (Azetype Std.) is free for personal
-> use; embedding it in a commercial website technically requires a licence
-> from Creative Market (~$15–20).
+Notes:
+- The font contains A–Z, a–z, comma, and period. Characters it lacks
+  (underscore, digits, ampersand…) automatically fall back to *Great Vibes*
+  per-glyph, so nothing ever renders as boxes.
+- To update the social-preview image or favicons after a font change, the
+  scripts that generated them are reproducible — just ask for a rebuild.
+- **Licensing:** *Wedding Ampersand* (Azetype Std.) is free for personal use;
+  embedding it in a commercial website technically requires a licence from
+  Creative Market (~$15–20).
 
 ## Other fonts (self-hosted, free — OFL)
 
@@ -180,6 +180,6 @@ To install your real font:
 - [x] Set `formspreeId` in `assets/js/config.js` → `xnpqbjky` ✓
 - [x] Set `instagram` handle → `oj_oyesola` ✓
 - [ ] Replace placeholder images with real photography
-- [ ] Drop in the real brand font (see above)
+- [x] Drop in the real brand font ✓ (`assets/fonts/wedding-ampersand.{ttf,woff2}`)
 - [ ] Change `salt` (config.js **and** tools/new_gallery.py) before first real delivery
 - [ ] Update `og:image` / sitemap / robots URLs when the custom domain is attached
