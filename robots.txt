@@ -1,0 +1,7 @@
+# OJ_Oyesola Photography
+User-agent: *
+Allow: /
+Disallow: /galleries/
+
+# Update the URL below when a custom domain is attached (see README)
+Sitemap: https://oj-oyesola.github.io/OJ-website/sitemap.xml

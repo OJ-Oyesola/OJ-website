@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Access — OJ_Oyesola Photography</title>
+  <meta name="description" content="Access your private OJ_Oyesola client gallery. Enter the access code emailed to you after your session to view, download, and order prints.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#14110C">
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/client.css">
+</head>
+<body class="portal-page">
+
+  <header class="portal-header">
+    <div class="container inner">
+      <a href="index.html" class="brand" aria-label="OJ_Oyesola — back to site">OJ_Oyesola</a>
+      <span class="ph-label">Client Portal</span>
+      <a class="home" href="index.html">Back to site
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+    </div>
+  </header>
+
+  <main class="portal-main">
+
+    <!-- ===== Login ===== -->
+    <section class="login-wrap" id="loginView">
+      <div class="login-card">
+        <p class="eyebrow eyebrow--plain" style="color:#C9A87A">Client Portal</p>
+        <h1 class="script-hero">Your Gallery</h1>
+        <p>Enter the gallery access code sent to your email after your session to view and download your photos.</p>
+
+        <form class="login-form" id="loginForm" novalidate>
+          <div class="field">
+            <label for="g-email">Your Email</label>
+            <input id="g-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="g-code">Gallery Access Code</label>
+            <input id="g-code" name="code" type="text" autocomplete="off" autocapitalize="characters" required>
+          </div>
+          <p class="login-error" id="loginError" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+            <span id="loginErrorMsg">We couldn't find a gallery with that email and code. Check your inbox — or the spam folder.</span>
+          </p>
+          <button type="submit" class="btn btn--light" id="loginBtn" style="width:100%">Access My Gallery</button>
+        </form>
+
+        <div class="demo-hint">
+          Don't have a code? <a href="index.html#contact" style="text-decoration:underline;text-underline-offset:3px">Contact us</a>.<br>
+          Preview the experience — email <strong>demo@oj-oyesola.com</strong>, code <strong>OJ-DEMO</strong> (portraits) or <strong>OJ-WEDDING</strong> <button type="button" id="fillDemo">(try it)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Gallery ===== -->
+    <section class="gallery-view container" id="galleryView">
+      <div class="g-head">
+        <h2 class="g-title" id="gTitle"></h2>
+        <div class="g-meta"><span id="gSubtitle"></span><span id="gCount"></span><span id="gDate"></span></div>
+        <p class="g-note">Thank you for creating art with us.</p>
+        <button type="button" class="signout" id="signOut">Sign out
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      </div>
+
+      <div class="expired-banner" id="expiredBanner" hidden>
+        This gallery has passed its 12-month active window. Need your photos again? <a href="index.html#contact">Get in touch</a> — I keep archives.
+      </div>
+
+      <div id="externalWrap" hidden>
+        <div class="external-card">
+          <span class="ec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="9.5" rx="2"/><path d="M8.5 10.5 10 7h4l1.5 3.5"/><circle cx="12" cy="15.2" r="2.4"/></svg></span>
+          <h2>Your gallery is hosted externally</h2>
+          <p>This collection was delivered through an external gallery provider. Use the button below to open it.</p>
+          <a class="btn btn--brass" id="externalLink" target="_blank" rel="noopener">Open My Gallery
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div>
+      </div>
+
+      <div class="photo-grid" id="photoGrid"></div>
+    </section>
+  </main>
+
+  <!-- selection action bar -->
+  <div class="action-bar" id="actionBar">
+    <div class="container inner">
+      <span class="ab-count" id="abCount">0 selected</span>
+      <div class="ab-actions">
+        <div class="ab-tools">
+          <button type="button" id="abSelectAll">Select all</button>
+          <button type="button" id="abClear">Clear</button>
+        </div>
+        <button type="button" class="btn btn--ghost btn--ghost--light btn--sm" id="abPrints">Request Prints</button>
+        <button type="button" class="btn btn--brass btn--sm" id="abDownload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:.9rem;height:.9rem"><path d="M12 4v11M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+          Download Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- photo lightbox -->
+  <div class="lightbox" id="photoLightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <div class="lb-top">
+      <span class="lb-count" id="plCount"></span>
+      <button class="lb-close" id="plClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="lb-stage">
+      <img id="plImg" src="" alt="">
+      <div class="lb-nav">
+        <button id="plPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M11 19l-7-7 7-7"/></svg></button>
+        <button id="plNext" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <div class="lb-bottom">
+      <span class="lb-title" id="plTitle"></span>
+      <span class="lb-cat" id="plCat"></span>
+      <div class="lb-tools">
+        <button type="button" class="btn btn--brass btn--sm" id="plSelect">Select photo</button>
+        <a class="btn btn--ghost btn--ghost--light btn--sm" id="plDownload" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:.9rem;height:.9rem"><path d="M12 4v11M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+          Download</a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="portal-footer">
+    <div class="container">
+      <span>Delivered with care by <a href="index.html">OJ_Oyesola Photography</a> · Ibadan, Nigeria</span>
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/client.js"></script>
+</body>
+</html>
