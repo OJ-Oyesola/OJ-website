@@ -94,7 +94,7 @@
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>5+ years behind the lens</span>
         </div>
       </div>
-      <div class="scroll-cue" aria-hidden="true">Scroll</div>
+      <button type="button" class="scroll-cue" id="scrollCue" aria-label="Scroll to portfolio">Scroll</button>
     </section>
 
     <!-- ======= Marquee ======= -->
@@ -117,20 +117,7 @@
           <p class="rule-index reveal">01 / 06</p>
         </div>
 
-        <div class="features">
-          <figure class="feature feature-1 reveal" data-collection="headshots">
-            <img src="assets/img/feature-headshots.jpg" alt="A confident professional headshot in soft studio light" loading="lazy">
-            <figcaption><div><div class="f-title">Headshots</div><div class="f-cat">Portraits</div></div><span class="f-index">Nº 01</span></figcaption>
-          </figure>
-          <figure class="feature feature-2 reveal" data-delay="1" data-collection="graduates">
-            <img src="assets/img/feature-graduates.jpg" alt="A graduate in ceremonial gown and hood, portrait" loading="lazy">
-            <figcaption><div><div class="f-title">Inductees &amp; Graduands</div><div class="f-cat">Portraits</div></div><span class="f-index">Nº 02</span></figcaption>
-          </figure>
-          <figure class="feature feature-3 reveal" data-delay="2" data-collection="crimson">
-            <img src="assets/img/feature-crimson.jpg" alt="A crimson-toned fashion editorial portrait" loading="lazy">
-            <figcaption><div><div class="f-title">Crimson</div><div class="f-cat">Editorial</div></div><span class="f-index">Nº 03</span></figcaption>
-          </figure>
-        </div>
+        <div class="features" id="features"></div>
       </div>
     </section>
 
@@ -153,87 +140,10 @@
           <button data-filter="editorial">Editorial</button>
           <button data-filter="weddings">Weddings</button>
           <button data-filter="commercial">Commercial</button>
-          <span class="count" id="filterCount">19 collections</span>
+          <span class="count" id="filterCount">Loading collections…</span>
         </div>
 
-        <div class="masonry" id="masonry">
-          <button class="tile" data-cat="portraits" data-collection="headshots">
-            <img src="assets/img/covers/headshots.jpg" alt="Headshots — portrait collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Headshots</span><span class="t-cat">Portraits</span></span>
-          </button>
-          <button class="tile" data-cat="portraits" data-collection="graduates">
-            <img src="assets/img/covers/graduates.jpg" alt="Inductees and graduands — portrait collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Inductees &amp; Graduands</span><span class="t-cat">Portraits</span></span>
-          </button>
-          <button class="tile" data-cat="events" data-collection="men-in-black">
-            <img src="assets/img/covers/men-in-black.jpg" alt="Men in Black — red carpet event collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Men in Black: The Red Carpet</span><span class="t-cat">Events</span></span>
-          </button>
-          <button class="tile" data-cat="editorial" data-collection="arambara">
-            <img src="assets/img/covers/arambara.jpg" alt="Arambara — editorial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Arambara</span><span class="t-cat">Editorial</span></span>
-          </button>
-          <button class="tile" data-cat="weddings" data-collection="ayo-and-ola">
-            <img src="assets/img/covers/ayo-and-ola.jpg" alt="Ayo and Ola — wedding collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Ayo &amp; Ola</span><span class="t-cat">Weddings</span></span>
-          </button>
-          <button class="tile" data-cat="portraits" data-collection="birthdays">
-            <img src="assets/img/covers/birthdays.jpg" alt="Birthdays — portrait collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Birthdays</span><span class="t-cat">Portraits</span></span>
-          </button>
-          <button class="tile" data-cat="events" data-collection="summerfest">
-            <img src="assets/img/covers/summerfest.jpg" alt="Westside Summerfest — event collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Westside Summerfest</span><span class="t-cat">Events</span></span>
-          </button>
-          <button class="tile" data-cat="editorial" data-collection="light-and-dark">
-            <img src="assets/img/covers/light-and-dark.jpg" alt="Light and Dark — editorial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Light &amp; Dark</span><span class="t-cat">Editorial</span></span>
-          </button>
-          <button class="tile" data-cat="weddings" data-collection="couples">
-            <img src="assets/img/covers/couples.jpg" alt="Couples — wedding collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Couples</span><span class="t-cat">Weddings</span></span>
-          </button>
-          <button class="tile" data-cat="events" data-collection="vmj-book-launch">
-            <img src="assets/img/covers/vmj-book-launch.jpg" alt="VMJ Book Launch — event collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">VMJ Book Launch</span><span class="t-cat">Events</span></span>
-          </button>
-          <button class="tile" data-cat="editorial" data-collection="crimson">
-            <img src="assets/img/covers/crimson.jpg" alt="Crimson — editorial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Crimson</span><span class="t-cat">Editorial</span></span>
-          </button>
-          <button class="tile" data-cat="commercial" data-collection="abh-merch">
-            <img src="assets/img/covers/abh-merch.jpg" alt="ABH Merch Launch — commercial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">ABH Merch Launch</span><span class="t-cat">Commercial</span></span>
-          </button>
-          <button class="tile" data-cat="portraits" data-collection="style-and-all">
-            <img src="assets/img/covers/style-and-all.jpg" alt="Style and All — portrait collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Style &amp; All</span><span class="t-cat">Portraits</span></span>
-          </button>
-          <button class="tile" data-cat="events" data-collection="credo-hackathon">
-            <img src="assets/img/covers/credo-hackathon.jpg" alt="Credo Hackathon — event collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Credo Hackathon</span><span class="t-cat">Events</span></span>
-          </button>
-          <button class="tile" data-cat="editorial" data-collection="suit-boss">
-            <img src="assets/img/covers/suit-boss.jpg" alt="Suit Boss — editorial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Suit Boss</span><span class="t-cat">Editorial</span></span>
-          </button>
-          <button class="tile" data-cat="weddings" data-collection="garden-party">
-            <img src="assets/img/covers/garden-party.jpg" alt="Garden Party — wedding collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Garden Party</span><span class="t-cat">Weddings</span></span>
-          </button>
-          <button class="tile" data-cat="editorial" data-collection="brown-sugar">
-            <img src="assets/img/covers/brown-sugar.jpg" alt="Brown Sugar — editorial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Brown Sugar</span><span class="t-cat">Editorial</span></span>
-          </button>
-          <button class="tile" data-cat="commercial" data-collection="fashion-editorial">
-            <img src="assets/img/covers/fashion-editorial.jpg" alt="Fashion Editorial — commercial collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Fashion Editorial</span><span class="t-cat">Commercial</span></span>
-          </button>
-          <button class="tile" data-cat="events" data-collection="blue-moon-gala">
-            <img src="assets/img/covers/blue-moon-gala.jpg" alt="Once in a Blue Moon Gala — event collection" loading="lazy"><span class="tile-veil"></span>
-            <span class="tile-meta"><span class="t-title">Once in a Blue Moon Gala</span><span class="t-cat">Events</span></span>
-          </button>
-        </div>
+        <div class="masonry" id="masonry"></div>
       </div>
     </section>
 
@@ -662,7 +572,7 @@
   </div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/collections.js"></script>
+  <script src="assets/js/galleries.js"></script>
   <script src="assets/js/forms.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
