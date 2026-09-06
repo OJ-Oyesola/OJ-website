@@ -1,5 +1,5 @@
 {
-  "title": "Sample Gallery",
+  "title": "The Adewales",
   "subtitle": "Portrait Session",
   "date": "December 2025",
   "expires": "2027-12-31",
@@ -22,29 +22,29 @@
       "full": "full/003.jpg",
       "grid": "grid/003.jpg",
       "thumb": "thumbs/003.jpg",
-      "w": 896,
-      "h": 1200
+      "w": 1152,
+      "h": 928
     },
     {
       "full": "full/004.jpg",
       "grid": "grid/004.jpg",
       "thumb": "thumbs/004.jpg",
-      "w": 1200,
-      "h": 896
+      "w": 928,
+      "h": 1152
     },
     {
       "full": "full/005.jpg",
       "grid": "grid/005.jpg",
       "thumb": "thumbs/005.jpg",
-      "w": 928,
-      "h": 1152
+      "w": 1152,
+      "h": 928
     },
     {
       "full": "full/006.jpg",
       "grid": "grid/006.jpg",
       "thumb": "thumbs/006.jpg",
-      "w": 1024,
-      "h": 1024
+      "w": 928,
+      "h": 1152
     }
   ]
 }
