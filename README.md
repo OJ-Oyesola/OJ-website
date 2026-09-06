@@ -111,32 +111,36 @@ backend; if you ever need it, that's the upgrade path.)
 
 ## Swapping in real photography
 
-All current images are **placeholders** (AI-generated stand-ins) so the design
-could be built before the real work arrived. To replace them:
+The portfolio is driven by the **real shoot folders** at the repo root (see
+"Adding photos to a portfolio collection" below). A handful of static assets
+still live under `assets/img/` and are used by name:
 
 | Slot | Files |
 |---|---|
-| Hero | `assets/img/hero.jpg` (16:9, ~1920px wide) |
+| Hero | `assets/img/hero.jpg` (16:9, ~1920px wide) — preload + JS fallback for the rotating `Hero Images/` pool |
 | About portrait | `assets/img/about.jpg` (4:5) |
-| Selected-work features | `assets/img/feature-*.jpg` |
-| Portfolio covers (19 collections) | `assets/img/covers/<collection>.jpg` |
+| Social share | `assets/img/og.jpg` (`og:image`) |
+| Favicons | `assets/img/favicon.svg`, `favicon-32.png`, `favicon-180.png` |
 
 Replace a file **keeping the same name**, sized similarly — done.
 
 ### Adding photos to a portfolio collection
 
-Clicking a portfolio tile now opens a **collection gallery** (bento grid of that
+Clicking a portfolio tile opens a **collection gallery** (bento grid of that
 collection's photos → click any frame for the full-screen viewer). Photos live
-in `assets/img/collections/<collection-slug>/` and are listed in
-`assets/js/collections.js`:
+in the **top-level shoot folders** at the repo root — one gallery per folder —
+and the manifest is *generated*, not hand-edited:
 
-1. Drop the photo in `assets/img/collections/<slug>/NN.jpg`
-   (4:5 or 5:4; events collections 3:2).
-2. Add its `{ src, w, h }` to that collection's `images` array in
-   `assets/js/collections.js` (first entry = the cover = what the tile shows).
+1. Drop the photo into the shoot folder (e.g. `Couples/IMG_9999.jpg`). To add a
+   new collection, create the folder and add its `id / folder / title / cat /
+   blurb` entry to `GALLERIES` in `tools/build_galleries.py`.
+2. Regenerate the manifest from the repo root:
+   `python3 tools/build_galleries.py`
+   — this rewrites `assets/js/galleries.js` (`OJ_GALLERIES`, `OJ_HEROES`,
+   `OJ_ABOUT`) straight from what is on disk.
 
-Collections with **one image** show a *"being curated"* note with a booking
-CTA, so even a lone cover looks intentional.
+Each tile's cover is picked at random from that gallery's photos on every page
+load, so no separate cover image needs maintaining.
 
 ### Client portal — selection & downloads
 
