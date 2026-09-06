@@ -132,6 +132,8 @@
     $("#loginView").style.display = "";
     $("#actionBar").classList.remove("is-visible");
     document.body.classList.remove("select-mode");
+    var modeBtn = $("#btnSelectMode");
+    if (modeBtn) modeBtn.setAttribute("aria-pressed", "false");
     $("#loginForm").reset();
     window.scrollTo(0, 0);
   }
@@ -149,13 +151,21 @@
 
   function syncBar() {
     var bar = $("#actionBar");
+    var photos = (state.data && state.data.photos) || [];
     var n = state.selected.size;
     $("#abCount").textContent = n + " selected";
-    $("#abSelectAll").textContent = (state.data.photos && n === state.data.photos.length) ? "Deselect all" : "Select all";
-    if (n > 0) bar.classList.add("is-visible");
-    else { bar.classList.remove("is-visible"); state.selectMode = n > 0 || state.selectMode; }
-    document.body.classList.toggle("select-mode", n > 0);
-    if (n === 0) state.selectMode = false;
+    $("#abSelectAll").textContent = (n === photos.length && n > 0) ? "Deselect all" : "Select all";
+    /* the bar stays visible while selecting — even with nothing picked yet */
+    bar.classList.toggle("is-visible", n > 0 || state.selectMode);
+    document.body.classList.toggle("select-mode", state.selectMode);
+    var modeBtn = $("#btnSelectMode");
+    if (modeBtn) {
+      modeBtn.classList.toggle("is-active", state.selectMode);
+      modeBtn.setAttribute("aria-pressed", String(state.selectMode));
+      modeBtn.innerHTML = state.selectMode
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg> Done selecting'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11.5 11.5 14 15 9.5"/><rect x="4" y="3.5" width="16" height="17" rx="3"/></svg> Select photos';
+    }
     var plSel = $("#plSelect");
     if (plSel && state.lbIndex >= 0) {
       var on = state.selected.has(state.lbIndex);
@@ -164,30 +174,46 @@
     }
   }
 
+  function setSelectMode(on) {
+    state.selectMode = on;
+    if (!on) {
+      state.selected.clear();
+      ((state.data && state.data.photos) || []).forEach(function (_, i) {
+        var cell = cellAt(i);
+        if (cell) cell.classList.remove("is-selected");
+      });
+    }
+    syncBar();
+  }
+
   function selectAll() {
-    var photos = state.data.photos || [];
-    var allOn = state.selected.size === photos.length;
+    var photos = (state.data && state.data.photos) || [];
+    var allOn = state.selected.size === photos.length && photos.length > 0;
     state.selected.clear();
     if (!allOn) photos.forEach(function (_, i) { state.selected.add(i); });
     photos.forEach(function (_, i) {
       var cell = cellAt(i);
       if (cell) cell.classList.toggle("is-selected", state.selected.has(i));
     });
-    state.selectMode = state.selected.size > 0;
+    /* keep whatever select-mode the user is in — only sync the UI */
     syncBar();
   }
 
   /* ---------- downloads ---------- */
-  function downloadIndices(indices) {
-    if (!indices.length) return;
-    var photos = state.data.photos || [];
+  function slugTitle() {
+    return ((state.data && state.data.title) || "photos").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() || "photos";
+  }
+
+  function sequentialDownload(indices) {
+    /* fallback when JSZip is unavailable: one file at a time */
+    var photos = (state.data && state.data.photos) || [];
     indices.forEach(function (i, n) {
       var p = photos[i];
       if (!p) return;
       setTimeout(function () {
         var a = document.createElement("a");
         a.href = state.base + "/" + p.full;
-        a.download = (state.data.title || "photo").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() + "-" + String(i + 1).padStart(3, "0") + ".jpg";
+        a.download = slugTitle() + "-" + String(i + 1).padStart(3, "0") + ".jpg";
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -195,12 +221,70 @@
     });
   }
 
+  function downloadIndices(indices, btn) {
+    if (!indices || !indices.length) return;
+    var photos = (state.data && state.data.photos) || [];
+    var files = indices.map(function (i) { return { i: i, p: photos[i] }; }).filter(function (x) { return !!x.p; });
+    var label = btn ? btn.innerHTML : null;
+    function busy(text) {
+      if (!btn) return;
+      btn.classList.add("is-busy");
+      btn.textContent = text;
+    }
+    function done() {
+      if (!btn) return;
+      btn.classList.remove("is-busy");
+      btn.innerHTML = label;
+    }
+
+    if (window.JSZip) {
+      busy("Preparing\u2026 0/" + files.length);
+      var zip = new window.JSZip();
+      var chain = Promise.resolve();
+      files.forEach(function (f, n) {
+        chain = chain.then(function () {
+          return fetch(state.base + "/" + f.p.full).then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.blob();
+          }).then(function (b) {
+            zip.file(slugTitle() + "-" + String(f.i + 1).padStart(3, "0") + ".jpg", b);
+            busy("Downloading " + (n + 1) + "/" + files.length + "\u2026");
+          });
+        });
+      });
+      chain
+        .then(function () {
+          busy("Packing\u2026");
+          return zip.generateAsync({ type: "blob" }, function (meta) {
+            busy("Packing " + Math.round(meta.percent) + "%");
+          });
+        })
+        .then(function (blob) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = slugTitle() + ".zip";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+          done();
+        })
+        .catch(function () {
+          done();
+          sequentialDownload(indices);
+        });
+    } else {
+      /* no zip library — download one by one */
+      sequentialDownload(indices);
+    }
+  }
+
   /* ---------- prints ---------- */
   function requestPrints() {
     var picks = Array.from(state.selected).sort(function (a, b) { return a - b; });
     var list = picks.length ? picks.map(function (i) { return "Photo " + String(i + 1).padStart(2, "0"); }).join(", ") : "All photos";
-    var subject = "Print Order — " + (state.data.title || "Gallery");
-    var body = "Hello OJ,\n\nI'd like to order prints from \"" + (state.data.title || "my gallery") + "\".\n\nPhotos: " + list +
+    var subject = "Print Order — " + ((state.data && state.data.title) || "Gallery");
+    var body = "Hello OJ,\n\nI'd like to order prints from \"" + ((state.data && state.data.title) || "my gallery") + "\".\n\nPhotos: " + list +
       "\n\nSizes / finishes I'm interested in:\n\nDelivery address:\n";
     window.location.href = "mailto:" + (CFG.email || "oj.oyesola@gmail.com") +
       "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
@@ -214,7 +298,7 @@
     document.body.style.overflow = "hidden";
   }
   function renderLB() {
-    var photos = state.data.photos || [];
+    var photos = (state.data && state.data.photos) || [];
     var p = photos[state.lbIndex];
     if (!p) return;
     $("#plImg").src = state.base + "/" + p.full;
@@ -223,7 +307,7 @@
     $("#plTitle").textContent = p.caption || (state.data.title || "");
     $("#plCat").textContent = (state.data.subtitle || "").toUpperCase();
     $("#plDownload").href = state.base + "/" + p.full;
-    $("#plDownload").setAttribute("download", (state.data.title || "photo").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() + "-" + String(state.lbIndex + 1).padStart(3, "0") + ".jpg");
+    $("#plDownload").setAttribute("download", ((state.data && state.data.title) || "photo").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() + "-" + String(state.lbIndex + 1).padStart(3, "0") + ".jpg");
     syncBar();
   }
   function closeLightbox() {
@@ -242,21 +326,29 @@
     initLogin();
     $("#signOut").addEventListener("click", signOut);
 
+    $("#btnSelectMode").addEventListener("click", function () {
+      setSelectMode(!state.selectMode);
+    });
+    $("#btnDownloadAll").addEventListener("click", function () {
+      var photos = (state.data && state.data.photos) || [];
+      var all = photos.map(function (_, i) { return i; });
+      downloadIndices(all, this);
+    });
+    $("#btnPrints").addEventListener("click", requestPrints);
+
     $("#abSelectAll").addEventListener("click", selectAll);
     $("#abClear").addEventListener("click", function () {
       state.selected.clear();
-      (state.data.photos || []).forEach(function (_, i) {
+      ((state.data && state.data.photos) || []).forEach(function (_, i) {
         var cell = cellAt(i);
         if (cell) cell.classList.remove("is-selected");
       });
-      state.selectMode = false;
       syncBar();
     });
     $("#abDownload").addEventListener("click", function () {
       if (!state.selected.size) return;
-      downloadIndices(Array.from(state.selected).sort(function (a, b) { return a - b; }));
+      downloadIndices(Array.from(state.selected).sort(function (a, b) { return a - b; }), this);
     });
-    $("#abPrints").addEventListener("click", requestPrints);
 
     $("#plClose").addEventListener("click", closeLightbox);
     $("#plPrev").addEventListener("click", function () { moveLB(-1); });

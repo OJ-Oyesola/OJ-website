@@ -27,7 +27,7 @@
 /* ---------- Login ---------- */
 .login-wrap { display: grid; place-items: center; padding: clamp(3rem, 8vh, 6rem) var(--gutter); }
 .login-card { width: min(100%, 30rem); text-align: center; display: grid; gap: 1.1rem; justify-items: center; }
-.login-card .script-hero { font-family: var(--font-script); font-size: clamp(3rem, 8vw, 4.4rem); color: var(--cream); line-height: 1.1; }
+.login-card .script-hero { font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(2.6rem, 7vw, 3.8rem); color: var(--cream); line-height: 1.15; }
 .login-card > p { color: var(--cream-soft); max-width: 40ch; }
 
 .login-form { width: 100%; display: grid; gap: 1.3rem; margin-top: 0.8rem; text-align: left; }
@@ -56,9 +56,13 @@
 .gallery-view.is-active { display: block; }
 
 .g-head { padding: clamp(2.6rem, 6vw, 4.5rem) 0 clamp(1.8rem, 4vw, 2.8rem); text-align: center; display: grid; gap: 0.8rem; justify-items: center; }
-.g-title { font-family: var(--font-script); font-size: clamp(2.6rem, 6vw, 4.2rem); line-height: 1.1; color: var(--cream); }
+.g-title { font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.15; color: var(--cream); }
 .g-meta { font-size: 0.6875rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(237,231,219,0.55); display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: center; }
 .g-note { font-family: var(--font-display); font-style: italic; font-size: 1.15rem; color: var(--cream-soft); }
+.g-tools { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; margin-top: 0.4rem; }
+.g-tools .btn { display: inline-flex; align-items: center; gap: 0.5rem; }
+.g-tools .btn svg { width: 0.95rem; height: 0.95rem; flex: none; }
+.btn.is-busy { opacity: 0.75; pointer-events: none; }
 .signout {
   margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.45rem;
   font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(237,231,219,0.5);
