@@ -177,8 +177,8 @@ To install your real font:
 
 ## Maintenance checklist
 
-- [ ] Set `formspreeId` in `assets/js/config.js` (2 minutes, free)
-- [ ] Set `instagram` handle in the same file
+- [x] Set `formspreeId` in `assets/js/config.js` → `xnpqbjky` ✓
+- [x] Set `instagram` handle → `oj_oyesola` ✓
 - [ ] Replace placeholder images with real photography
 - [ ] Drop in the real brand font (see above)
 - [ ] Change `salt` (config.js **and** tools/new_gallery.py) before first real delivery

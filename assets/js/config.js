@@ -10,10 +10,10 @@
    instagram   : handle WITHOUT the @ (leave "" to hide the links).
    ========================================================================== */
 window.OJ_CONFIG = {
-  formspreeId: "",
+  formspreeId: "xnpqbjky",
   email: "oj.oyesola@gmail.com",
   phoneDisplay: "+234 706 584 8333",
   whatsapp: "2347065848333",
-  instagram: "",
+  instagram: "oj_oyesola",
   salt: "f90fab92741ea744b18d7471c6ad555e"
 };
