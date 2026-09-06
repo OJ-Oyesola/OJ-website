@@ -122,17 +122,40 @@ could be built before the real work arrived. To replace them:
 | Portfolio covers (19 collections) | `assets/img/covers/<collection>.jpg` |
 
 Replace a file **keeping the same name**, sized similarly — done.
-To add more photos inside a collection later, the lightbox can be extended
-(or link the tile to a client gallery).
+
+### Adding photos to a portfolio collection
+
+Clicking a portfolio tile now opens a **collection gallery** (bento grid of that
+collection's photos → click any frame for the full-screen viewer). Photos live
+in `assets/img/collections/<collection-slug>/` and are listed in
+`assets/js/collections.js`:
+
+1. Drop the photo in `assets/img/collections/<slug>/NN.jpg`
+   (4:5 or 5:4; events collections 3:2).
+2. Add its `{ src, w, h }` to that collection's `images` array in
+   `assets/js/collections.js` (first entry = the cover = what the tile shows).
+
+Collections with **one image** show a *"being curated"* note with a booking
+CTA, so even a lone cover looks intentional.
+
+### Client portal — selection & downloads
+
+The gallery toolbar has **Select photos** (tap photos to pick, or Select all),
+**Download all**, and **Request prints**. Downloads are bundled into a single
+**.zip** (via JSZip from CDN, with a graceful one-by-one fallback if the CDN
+is blocked). A floating action bar tracks the selection.
 
 ---
 
 ## Brand font — “Wedding Ampersand” ✓ installed
 
 The real font lives at `assets/fonts/wedding-ampersand.ttf` (+ optimized
-`.woff2`) and is already wired in everywhere the script style appears: the
-wordmark, the hero “forever.”, the “Yours, OJ.” sign-off, and contract
-signatures. If you ever replace the file, keep the same names.
+`.woff2`). **It is reserved for exactly two places** — the `OJ_Oyesola`
+wordmark (header, footer, portal, favicons, social-preview image) and the
+“OJ.” of the About sign-off. Every other script-feeling accent (hero
+“forever.”, portal headings, the 404 page) uses *Cormorant Garamond* italic;
+the contract signature preview uses *Great Vibes*. If you ever replace the
+font file, keep the same names.
 
 Notes:
 - The font contains A–Z, a–z, comma, and period. Characters it lacks
@@ -164,9 +187,9 @@ Notes:
 ├── robots.txt · sitemap.xml · site.webmanifest
 ├── assets/
 │   ├── css/              # main.css (site) · client.css (portal)
-│   ├── js/               # config.js ← edit this · main/client/contract/forms.js
+│   ├── js/               # config.js ← edit this · collections.js · main/client/contract/forms.js
 │   ├── fonts/            # self-hosted woff2
-│   └── img/              # hero, about, features, covers/, og, favicons
+│   └── img/              # hero, about, features, covers/, collections/, og, favicons
 ├── galleries/            # one folder per client gallery (hashed)
 │   └── <sha256>/         # data.json + full/ + grid/ + thumbs/
 └── tools/

@@ -5,6 +5,7 @@
   "use strict";
 
   var CFG = window.OJ_CONFIG || {};
+  var COLLECTIONS = window.OJ_COLLECTIONS || {};
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -16,6 +17,18 @@
       if (ig) {
         ig.href = "https://instagram.com/" + CFG.instagram;
         ig.hidden = false;
+      }
+      var row = $("#igContactRow");
+      if (row) {
+        $("#igContactLink").href = "https://instagram.com/" + CFG.instagram;
+        $("#igContactLink").textContent = "@" + CFG.instagram;
+        row.hidden = false;
+      }
+      var fig = $("#igFooterLink");
+      if (fig) {
+        fig.href = "https://instagram.com/" + CFG.instagram;
+        $("#igFooterText").textContent = "@" + CFG.instagram;
+        fig.hidden = false;
       }
     }
     $$("[data-email]").forEach(function (a) { if (CFG.email) a.href = "mailto:" + CFG.email; });
@@ -138,76 +151,159 @@
     });
   }
 
-  /* ---------- Lightbox ---------- */
+  /* ---------- Lightbox (individual photo viewer) ---------- */
+  var lb = {
+    box: null, items: [], index: 0,
+    open: function (items, index) {
+      this.items = items || [];
+      this.index = index || 0;
+      this.box.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+      this.render();
+    },
+    close: function () {
+      this.box.classList.remove("is-open");
+      if (!$("#collectionView") || !$("#collectionView").classList.contains("is-open")) {
+        document.body.style.overflow = "";
+      }
+    },
+    move: function (dir) {
+      var n = this.items.length;
+      if (!n) return;
+      this.index = (this.index + dir + n) % n;
+      this.render();
+    },
+    render: function () {
+      var it = this.items[this.index];
+      if (!it) return;
+      $("#lbImg").src = it.src;
+      $("#lbImg").alt = it.caption || "";
+      $("#lbTitle").textContent = it.title || "";
+      $("#lbCat").textContent = it.cat || "";
+      $("#lbDesc").textContent = it.desc || "";
+      $("#lbCount").textContent = this.items.length > 1
+        ? String(this.index + 1).padStart(2, "0") + " / " + String(this.items.length).padStart(2, "0")
+        : "";
+    }
+  };
+
   function initLightbox() {
     var box = $("#lightbox");
     if (!box) return;
-    var items = $$("[data-lb]");
-    var visible = [];
-    var idx = 0;
-    var img = $("#lbImg"), title = $("#lbTitle"), cat = $("#lbCat"),
-        desc = $("#lbDesc"), counter = $("#lbCount");
-
-    function currentList() {
-      return items.filter(function (el) {
-        if (el.classList.contains("tile")) return !el.classList.contains("is-hidden");
-        return true; /* features are always visible */
-      });
-    }
-    function render() {
-      var el = visible[idx];
-      if (!el) return;
-      var src = el.getAttribute("data-img") || (el.querySelector("img") || {}).src || "";
-      img.src = src;
-      img.alt = el.getAttribute("data-title") || "";
-      title.textContent = el.getAttribute("data-title") || "";
-      cat.textContent = (el.getAttribute("data-cat") || "").toUpperCase();
-      desc.textContent = el.getAttribute("data-desc") || "";
-      counter.textContent = String(idx + 1).padStart(2, "0") + " / " + String(visible.length).padStart(2, "0");
-    }
-    function open(el) {
-      visible = currentList();
-      idx = visible.indexOf(el);
-      if (idx < 0) { visible.push(el); idx = visible.length - 1; }
-      render();
-      box.classList.add("is-open");
-      document.body.style.overflow = "hidden";
-    }
-    function close() {
-      box.classList.remove("is-open");
-      document.body.style.overflow = "";
-    }
-    function move(dir) {
-      idx = (idx + dir + visible.length) % visible.length;
-      render();
-    }
-    items.forEach(function (el) {
-      if (el.tagName !== "BUTTON" && el.tagName !== "A") {
-        el.tabIndex = 0;
-        el.setAttribute("role", "button");
-      }
-      el.addEventListener("click", function (e) {
-        e.preventDefault();
-        open(el);
-      });
-      el.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          open(el);
-        }
-      });
-    });
-    $("#lbClose").addEventListener("click", close);
-    $("#lbPrev").addEventListener("click", function () { move(-1); });
-    $("#lbNext").addEventListener("click", function () { move(1); });
+    lb.box = box;
+    $("#lbClose").addEventListener("click", function () { lb.close(); });
+    $("#lbPrev").addEventListener("click", function () { lb.move(-1); });
+    $("#lbNext").addEventListener("click", function () { lb.move(1); });
     var cta = $("#lbCta");
-    if (cta) cta.addEventListener("click", close);
-    box.addEventListener("click", function (e) { if (e.target === box) close(); });
+    if (cta) cta.addEventListener("click", function () {
+      lb.close();
+      closeCollection();
+    });
+    box.addEventListener("click", function (e) { if (e.target === box) lb.close(); });
     document.addEventListener("keydown", function (e) {
       if (!box.classList.contains("is-open")) return;
-      if (e.key === "Escape") close();
-      if (e.key === "ArrowLeft") move(-1);
-      if (e.key === "ArrowRight") move(1);
+      if (e.key === "Escape") lb.close();
+      if (e.key === "ArrowLeft") lb.move(-1);
+      if (e.key === "ArrowRight") lb.move(1);
+    });
+  }
+
+  /* ---------- Collection gallery view (bento) ---------- */
+  var cv = { box: null, current: null };
+
+  function bentoSpans(w, h, i, total) {
+    /* returns [colSpan, rowSpan] for a pleasing dense bento layout */
+    var ratio = (w || 1) / (h || 1);
+    if (total === 1) return [4, 4];
+    if (total === 2) return [3, 3];
+    if (i === 0) {                       /* hero frame */
+      if (ratio >= 1.15) return [4, 3];
+      if (ratio <= 0.85) return [3, 4];
+      return [3, 3];
+    }
+    if (ratio >= 1.15) return [3, 2];
+    if (ratio <= 0.85) return [2, 3];
+    return [2, 2];
+  }
+
+  function openCollection(slug) {
+    var data = COLLECTIONS[slug];
+    if (!data) return;
+    cv.current = slug;
+    var grid = $("#cvGrid");
+    grid.innerHTML = "";
+
+    $("#cvTitle").textContent = data.title || slug;
+    $("#cvCat").textContent = (data.cat || "").toUpperCase();
+    $("#cvDesc").textContent = data.desc || "";
+    var imgs = data.images || [];
+    $("#cvCount").textContent = imgs.length + (imgs.length === 1 ? " frame" : " frames");
+
+    var maxCols = window.matchMedia("(max-width: 48rem)").matches ? 2 : 6;
+    imgs.forEach(function (im, i) {
+      var spans = bentoSpans(im.w, im.h, i, imgs.length);
+      var colSpan = Math.min(spans[0], maxCols);
+      var rowSpan = spans[1];
+      if (maxCols === 2) rowSpan = Math.min(rowSpan, colSpan >= 2 ? 3 : 4);
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "cv-item";
+      cell.setAttribute("aria-label", (data.title || "Collection") + " — photo " + (i + 1));
+      cell.style.gridColumn = "span " + colSpan;
+      cell.style.gridRow = "span " + rowSpan;
+      cell.innerHTML =
+        '<img src="' + im.src + '" alt="' + (data.title || "") + " — photo " + (i + 1) + '" loading="lazy">' +
+        '<span class="cv-num">' + String(i + 1).padStart(2, "0") + "</span>";
+      cell.addEventListener("click", function () {
+        lb.open(imgs.map(function (x) {
+          return { src: x.src, title: data.title, cat: (data.cat || "").toUpperCase(), desc: "", caption: data.title };
+        }), i);
+      });
+      grid.appendChild(cell);
+    });
+
+    var note = $("#cvNote");
+    if (imgs.length < 3) {
+      note.innerHTML = (imgs.length === 1
+        ? "A selected frame from this collection — more is being curated."
+        : "Selected frames from this collection — more is being curated.") +
+        '<br><a class="text-link" href="#contact" id="cvCta">Book a session to begin yours ' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></a>';
+      note.hidden = false;
+      $("#cvCta").addEventListener("click", closeCollection);
+    } else {
+      note.hidden = true;
+    }
+
+    cv.box.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+    cv.box.scrollTop = 0;
+  }
+
+  function closeCollection() {
+    if (!cv.box) return;
+    cv.box.classList.remove("is-open");
+    if (!lb.box || !lb.box.classList.contains("is-open")) {
+      document.body.style.overflow = "";
+    }
+  }
+
+  function initCollections() {
+    var box = $("#collectionView");
+    if (!box) return;
+    cv.box = box;
+    $$("[data-collection]").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.preventDefault();
+        openCollection(el.getAttribute("data-collection"));
+      });
+    });
+    $("#cvBack").addEventListener("click", closeCollection);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && box.classList.contains("is-open") &&
+          !(lb.box && lb.box.classList.contains("is-open"))) {
+        closeCollection();
+      }
     });
   }
 
@@ -259,22 +355,36 @@
     });
   }
 
-  /* ---------- Forms (via shared OJForms: Formspree + graceful fallback) ---------- */
+  /* ---------- Booking form ---------- */
+  var INQUIRY_FLAG = "oj_inquiry_sent";
   function initBookingForm() {
     var form = $("#bookingForm");
     if (!form) return;
-    window.OJForms.handle(
-      form,
-      $("#formSuccess"),
-      "New Booking Inquiry — OJ_Oyesola Photography",
-      "No email service connected yet — your email app is opening with the inquiry pre-filled (see README to connect Formspree)."
-    );
+    var success = $("#formSuccess");
+
+    /* returning visitor who already inquired → show the receipt state */
+    try {
+      if (window.localStorage.getItem(INQUIRY_FLAG) === "1") {
+        form.hidden = true;
+        success.hidden = false;
+      }
+    } catch (e) { /* private mode — ignore */ }
+
+    window.OJForms.handle(form, success, "New Booking Inquiry — OJ_Oyesola Photography",
+      "No email service connected yet — your email app is opening with the inquiry pre-filled (see README to connect Formspree).");
+
+    /* mark as sent on the form's own submit event too (covers the fallback path) */
+    form.addEventListener("submit", function () {
+      try { window.localStorage.setItem(INQUIRY_FLAG, "1"); } catch (e) {}
+    });
+
     var again = $("#sendAnother");
     if (again) again.addEventListener("click", function (e) {
       e.preventDefault();
+      try { window.localStorage.removeItem(INQUIRY_FLAG); } catch (err) {}
       form.reset();
       form.hidden = false;
-      $("#formSuccess").hidden = true;
+      success.hidden = true;
     });
   }
 
@@ -305,6 +415,7 @@
     initCounters();
     initFilters();
     initLightbox();
+    initCollections();
     initQuotes();
     initFaq();
     initBookingForm();
