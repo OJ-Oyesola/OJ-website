@@ -202,7 +202,7 @@
     wrap.innerHTML = "";
     showcaseList().forEach(function (g, i) {
       var fig = document.createElement("figure");
-      fig.className = "feature feature-" + (i + 1) + " reveal";
+      fig.className = "feature reveal";
       fig.setAttribute("tabindex", "0");
       fig.setAttribute("role", "button");
       fig.setAttribute("aria-label", "Open " + g.title + " gallery");
@@ -223,7 +223,11 @@
       idx.textContent = "Nº " + String(i + 1).padStart(2, "0");
       capEl.appendChild(inner); capEl.appendChild(idx);
 
-      fig.appendChild(img); fig.appendChild(capEl);
+      var frame = document.createElement("div");
+      frame.className = "f-frame";   /* clips the hover zoom; caption sits below it */
+      frame.appendChild(img);
+
+      fig.appendChild(frame); fig.appendChild(capEl);
       wrap.appendChild(fig);
     });
   }
