@@ -28,6 +28,7 @@
 /* ---------- Login ---------- */
 .login-wrap { display: grid; place-items: center; padding: clamp(3rem, 8vh, 6rem) var(--gutter); }
 .login-card { width: min(100%, 30rem); text-align: center; display: grid; gap: 1.1rem; justify-items: center; }
+.portal-eyebrow { color: var(--brass-soft); }
 .login-card .script-hero { font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(2.6rem, 7vw, 3.8rem); color: var(--cream); line-height: 1.15; }
 .login-card > p { color: var(--cream-soft); max-width: 40ch; }
 
@@ -118,8 +119,6 @@
   width: min(100%, 34rem); margin: 0 auto 6rem; text-align: center; border: 1px solid var(--line-dark);
   border-radius: 8px; padding: 3rem 2rem; display: grid; gap: 1rem; justify-items: center;
 }
-.external-card .ec-icon { width: 3.6rem; height: 3.6rem; border: 1px solid var(--brass); border-radius: 999px; display: grid; place-items: center; color: var(--brass); }
-.external-card .ec-icon svg { width: 1.4rem; height: 1.4rem; }
 .external-card h2 { font-size: 1.8rem; }
 .external-card p { color: var(--cream-soft); font-size: 0.95rem; }
 

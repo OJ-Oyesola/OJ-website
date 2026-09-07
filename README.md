@@ -41,7 +41,7 @@ source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r tools/requirements.txt
 npm ci
 npx playwright install chromium     # Linux CI: add --with-deps
-npm run check                      # lint, manifest freshness, links/assets, Python tests
+npm run check                      # lint, manifest freshness, legal-shell sync, links/assets, Python tests
 npm test                           # desktop + mobile Chromium browser tests
 ```
 
@@ -220,7 +220,8 @@ a commercial web-embedding licence before using it commercially.
 ├── assets/fonts/ · assets/img/    # static brand assets
 ├── <shoot folders>/               # original portfolio photographs
 ├── galleries/<sha256>/            # client data + full/grid/thumbs images
-├── tools/                         # gallery generators and offline site checks
+├── tools/                         # gallery generators, legal-shell sync, offline site checks
+├── tools/templates/               # shared legal-page header/footer fragments
 ├── tests/                         # Python unit + desktop/mobile browser tests
 └── .github/workflows/check.yml    # automated checks (not a deployment workflow)
 ```

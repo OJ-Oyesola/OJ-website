@@ -1,4 +1,4 @@
-const { test, expect, fillBooking } = require("./helpers");
+const { test, expect, fillBooking, login } = require("./helpers");
 
 test("invalid inquiries are not remembered as sent", async ({ page }) => {
   await page.goto("index.html");
@@ -31,6 +31,23 @@ test("Escape closes only the top gallery layer and keeps the page locked", async
   await page.keyboard.press("Escape");
   await expect(page.locator("#collectionView")).toBeHidden();
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+});
+
+test("portfolio back button closes a collection even when the image lightbox never opened", async ({ page }) => {
+  await page.goto("index.html");
+  await page.locator(".tile").first().click();
+  await expect(page.locator("#collectionView")).toBeVisible();
+  await page.locator("#cvBack").click();
+  await expect(page.locator("#collectionView")).toBeHidden();
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
+});
+
+test("signing out works even when the gallery lightbox is already closed", async ({ page }) => {
+  await login(page);
+  await expect(page.locator("#photoLightbox")).toBeHidden();
+  await page.locator("#signOut").click();
+  await expect(page.locator("#loginView")).toBeVisible();
+  await expect(page.locator("#galleryView")).toBeHidden();
 });
 
 test("homepage still boots without IntersectionObserver", async ({ page }) => {

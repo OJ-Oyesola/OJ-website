@@ -16,6 +16,7 @@
 
   var galleryById = new Map(GALLERIES.map(function (g) { return [g.id, g]; }));
   function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function galleryLabel(gallery) { return gallery.title + " — " + cap(gallery.cat) + " collection"; }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function shuffle(arr) {
     var a = arr.slice(), j, t;
@@ -35,6 +36,10 @@
     img.decoding = "async";
     img.src = photo.src;
     return img;
+  }
+
+  function closeDialog(dialog) {
+    if (dialog && dialog.open) dialog.close();
   }
 
   /* ---------- Header ---------- */
@@ -215,7 +220,7 @@
       if (i > 0) fig.setAttribute("data-delay", String(i));
       fig.setAttribute("data-collection", g.id);
 
-      var img = galleryImage(pick(g.photos), g.title + " — " + cap(g.cat) + " collection");
+      var img = galleryImage(pick(g.photos), galleryLabel(g));
 
       var capEl = document.createElement("figcaption");
       var inner = document.createElement("div");
@@ -247,9 +252,9 @@
       b.className = "tile";
       b.setAttribute("data-cat", g.cat);
       b.setAttribute("data-collection", g.id);
-      b.setAttribute("aria-label", g.title + " — " + cap(g.cat) + " collection");
+      b.setAttribute("aria-label", galleryLabel(g));
 
-      var img = galleryImage(pick(g.photos), g.title + " — " + cap(g.cat) + " collection");
+      var img = galleryImage(pick(g.photos), galleryLabel(g));
 
       var veil = document.createElement("span"); veil.className = "tile-veil";
       var meta = document.createElement("span"); meta.className = "tile-meta";
@@ -292,10 +297,10 @@
   var lb = {
     box: null, index: 0,
     open: function (index) {
-      if (!cv.photos[index]) return;
+      if (!cv.photos[index] || !this.box) return;
       this.index = index;
       this.render();
-      this.box.showModal();
+      if (!this.box.open) this.box.showModal();
     },
     move: function (dir) {
       var n = cv.photos.length;
@@ -320,11 +325,11 @@
     var box = $("#lightbox");
     if (!box) return;
     lb.box = box;
-    $("#lbClose").addEventListener("click", function () { box.close(); });
+    $("#lbClose").addEventListener("click", function () { closeDialog(box); });
     $("#lbPrev").addEventListener("click", function () { lb.move(-1); });
     $("#lbNext").addEventListener("click", function () { lb.move(1); });
     $("#lbCta").addEventListener("click", closeCollection);
-    box.addEventListener("click", function (e) { if (e.target === box) box.close(); });
+    box.addEventListener("click", function (e) { if (e.target === box) closeDialog(box); });
     box.addEventListener("close", function () { if (!box.open) $("#lbImg").removeAttribute("src"); });
     box.addEventListener("keydown", function (e) {
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -359,26 +364,31 @@
       fragment.appendChild(cell);
     });
     $("#cvGrid").replaceChildren(fragment);
-    cv.box.showModal();
+    if (!cv.box.open) cv.box.showModal();
     cv.box.scrollTop = 0;
   }
 
   function closeCollection() {
-    if (lb.box) lb.box.close();
-    if (cv.box) cv.box.close();
+    closeDialog(lb.box);
+    closeDialog(cv.box);
   }
 
   function initCollections() {
     var box = $("#collectionView");
     if (!box) return;
     cv.box = box;
-    $$("[data-collection]").forEach(function (el) {
-      function open() { openCollection(el.getAttribute("data-collection")); }
-      el.addEventListener("click", open);
+    document.addEventListener("click", function (e) {
+      var trigger = e.target.closest("[data-collection]");
+      if (trigger) openCollection(trigger.getAttribute("data-collection"));
+    });
+    document.addEventListener("keydown", function (e) {
+      var trigger = e.target.closest("[data-collection]");
       // Native buttons already implement Enter and Space.
-      if (el.tagName !== "BUTTON") el.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
-      });
+      if (!trigger || trigger.tagName === "BUTTON") return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openCollection(trigger.getAttribute("data-collection"));
+      }
     });
     $("#cvGrid").addEventListener("click", function (e) {
       var cell = e.target.closest("[data-index]");
