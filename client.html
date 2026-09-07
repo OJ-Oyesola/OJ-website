@@ -31,7 +31,7 @@
         <h1 class="script-hero">Your Gallery</h1>
         <p>Enter the gallery access code sent to your email after your session to view and download your photos.</p>
 
-        <form class="login-form" id="loginForm" novalidate>
+        <form class="login-form" id="loginForm" method="post" novalidate>
           <div class="field">
             <label for="g-email">Your Email</label>
             <input id="g-email" name="email" type="email" autocomplete="email" required>
@@ -57,13 +57,13 @@
     <!-- ===== Gallery ===== -->
     <section class="gallery-view container" id="galleryView">
       <div class="g-head">
-        <h2 class="g-title" id="gTitle"></h2>
+        <h2 class="g-title" id="gTitle" tabindex="-1"></h2>
         <div class="g-meta"><span id="gSubtitle"></span><span id="gCount"></span><span id="gDate"></span></div>
         <p class="g-note">Thank you for creating art with us.</p>
         <div class="g-tools" id="gTools">
-          <button type="button" class="btn btn--ghost btn--ghost--light btn--sm" id="btnSelectMode">
+          <button type="button" class="btn btn--ghost btn--ghost--light btn--sm" id="btnSelectMode" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11.5 11.5 14 15 9.5"/><rect x="4" y="3.5" width="16" height="17" rx="3"/></svg>
-            Select photos</button>
+            <span id="selectModeLabel">Select photos</span></button>
           <button type="button" class="btn btn--ghost btn--ghost--light btn--sm" id="btnDownloadAll">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
             Download all</button>
@@ -71,6 +71,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="5" width="10" height="5" rx="1"/><path d="M7 8H5.5A1.5 1.5 0 0 0 4 9.5V16a1.5 1.5 0 0 0 1.5 1.5H9l3 3 3-3h3.5A1.5 1.5 0 0 0 20 16V9.5A1.5 1.5 0 0 0 18.5 8H17"/></svg>
             Request prints</button>
         </div>
+        <p class="download-status" id="downloadStatus" role="status"></p>
         <button type="button" class="signout" id="signOut">Sign out
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
       </div>
@@ -94,9 +95,9 @@
   </main>
 
   <!-- selection action bar -->
-  <div class="action-bar" id="actionBar">
+  <div class="action-bar" id="actionBar" aria-hidden="true" inert>
     <div class="container inner">
-      <span class="ab-count" id="abCount">0 selected</span>
+      <span class="ab-count" id="abCount" role="status">0 selected</span>
       <div class="ab-actions">
         <div class="ab-tools">
           <button type="button" id="abSelectAll">Select all</button>
@@ -110,13 +111,13 @@
   </div>
 
   <!-- photo lightbox -->
-  <div class="lightbox" id="photoLightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <dialog class="lightbox" id="photoLightbox" aria-label="Photo viewer">
     <div class="lb-top">
       <span class="lb-count" id="plCount"></span>
-      <button class="lb-close" id="plClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button class="lb-close" id="plClose" aria-label="Close" autofocus><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="lb-stage">
-      <img id="plImg" src="" alt="">
+      <img id="plImg" alt="" decoding="async">
       <div class="lb-nav">
         <button id="plPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M11 19l-7-7 7-7"/></svg></button>
         <button id="plNext" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></button>
@@ -132,7 +133,7 @@
           Download</a>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <footer class="portal-footer">
     <div class="container">
@@ -140,8 +141,7 @@
     </div>
   </footer>
 
-  <script src="assets/js/config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer onerror="window.OJ_NO_ZIP=1"></script>
+  <script src="assets/js/config.js" defer></script>
   <script src="assets/js/client.js" defer></script>
 </body>
 </html>

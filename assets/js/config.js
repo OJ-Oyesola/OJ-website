@@ -17,3 +17,28 @@ window.OJ_CONFIG = {
   instagram: "oj_oyesola",
   salt: "f90fab92741ea744b18d7471c6ad555e"
 };
+
+/* Shared contact links and footer date; keep page scripts focused on behaviour. */
+document.addEventListener("DOMContentLoaded", function () {
+  "use strict";
+  var cfg = window.OJ_CONFIG;
+  document.querySelectorAll("[data-email]").forEach(function (link) {
+    link.href = "mailto:" + cfg.email;
+    if (link.hasAttribute("data-email-text")) link.textContent = cfg.email;
+  });
+  document.querySelectorAll("[data-phone]").forEach(function (link) {
+    link.href = "https://wa.me/" + cfg.whatsapp;
+    if (link.hasAttribute("data-phone-text")) link.textContent = cfg.phoneDisplay;
+  });
+  document.querySelectorAll("[data-ig]").forEach(function (link) {
+    link.href = cfg.instagram ? "https://instagram.com/" + encodeURIComponent(cfg.instagram) : "#";
+    link.hidden = !cfg.instagram;
+  });
+  document.querySelectorAll("[data-ig-text]").forEach(function (el) {
+    el.textContent = cfg.instagram ? "@" + cfg.instagram : "";
+  });
+  var row = document.getElementById("igContactRow");
+  if (row) row.hidden = !cfg.instagram;
+  var year = document.getElementById("year");
+  if (year) year.textContent = new Date().getFullYear();
+});

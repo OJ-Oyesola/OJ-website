@@ -1,0 +1,21 @@
+{
+  "name": "oj-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development checks for the static OJ_Oyesola photography site; no production build required.",
+  "scripts": {
+    "lint": "eslint .",
+    "check": "npm run lint && python3 tools/build_galleries.py --check && python3 tools/check_site.py && python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test": "playwright test"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "eslint": "10.10.0",
+    "globals": "17.12.0",
+    "jszip": "3.10.1"
+  }
+}

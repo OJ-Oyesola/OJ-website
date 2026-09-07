@@ -16,8 +16,9 @@
   display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
   padding-block: 0.95rem;
 }
-.portal-header .brand { color: var(--cream); font-size: 1.5rem; }
+.portal-header .brand { color: var(--cream); font-size: clamp(1.1rem, 5.5vw, 1.5rem); }
 .portal-header .ph-label { font-size: 0.625rem; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(237,231,219,0.5); }
+@media (max-width: 39.99rem) { .portal-header .ph-label { display: none; } }
 .portal-header a.home { font-size: 0.6875rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cream-soft); display: inline-flex; gap: 0.5rem; align-items: center; transition: color 0.3s; }
 .portal-header a.home:hover { color: var(--cream); }
 .portal-header a.home svg { width: 0.85rem; height: 0.85rem; }
@@ -33,9 +34,7 @@
 .login-form { width: 100%; display: grid; gap: 1.3rem; margin-top: 0.8rem; text-align: left; }
 .login-form .field label { color: rgba(237,231,219,0.6); }
 .login-form .field input {
-  color: var(--cream); border-bottom-color: var(--line-dark); background: transparent; width: 100%;
-  padding: 0.65rem 0; border: 0; border-bottom: 1px solid var(--line-dark); border-radius: 0; font-size: 1rem;
-  transition: border-color 0.3s;
+  color: var(--cream); border-bottom-color: var(--line-dark); padding-block: 0.65rem;
 }
 .login-form .field input:focus { outline: none; border-color: var(--brass); }
 .login-error {
@@ -62,7 +61,9 @@
 .g-tools { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; margin-top: 0.4rem; }
 .g-tools .btn { display: inline-flex; align-items: center; gap: 0.5rem; }
 .g-tools .btn svg { width: 0.95rem; height: 0.95rem; flex: none; }
-.btn.is-busy { opacity: 0.75; pointer-events: none; }
+.g-tools .btn[aria-pressed="true"] { border-color: var(--brass); }
+.download-status { max-width: 42rem; font-size: 0.88rem; color: var(--cream-soft); }
+.download-status:empty { display: none; }
 .signout {
   margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.45rem;
   font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(237,231,219,0.5);
@@ -99,7 +100,6 @@
   display: grid; place-items: center; color: transparent; opacity: 0;
   transition: opacity 0.25s, background 0.25s, color 0.25s;
 }
-.photo-cell .check svg { width: 0.9rem; height: 0.9rem; }
 .select-mode .photo-cell .check { opacity: 1; }
 .select-mode .photo-cell:hover img { transform: none; opacity: 0.85; }
 .photo-cell.is-selected .check { background: var(--brass); border-color: var(--brass); color: #fff; opacity: 1; }

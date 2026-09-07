@@ -59,7 +59,7 @@
     </div>
   </header>
 
-  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true" inert>
     <a class="m-link" href="#work">Work</a>
     <a class="m-link" href="#services">Services</a>
     <a class="m-link" href="#about">About</a>
@@ -142,7 +142,7 @@
           <button data-filter="editorial">Editorial</button>
           <button data-filter="weddings">Weddings</button>
           <button data-filter="commercial">Commercial</button>
-          <span class="count" id="filterCount">Loading collections…</span>
+          <span class="count" id="filterCount" role="status">Loading collections…</span>
         </div>
 
         <div class="masonry" id="masonry"></div>
@@ -385,15 +385,15 @@
             <div class="c-list">
               <div class="c-item">
                 <span class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-                <div><div class="ci-label">Email</div><a class="ci-value" href="mailto:oj.oyesola@gmail.com" data-email>oj.oyesola@gmail.com</a></div>
+                <div><div class="ci-label">Email</div><a class="ci-value" href="mailto:oj.oyesola@gmail.com" data-email data-email-text>oj.oyesola@gmail.com</a></div>
               </div>
               <div class="c-item">
                 <span class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.27a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9z"/></svg></span>
-                <div><div class="ci-label">Phone / WhatsApp</div><a class="ci-value" href="https://wa.me/2347065848333" data-phone target="_blank" rel="noopener">+234 706 584 8333</a></div>
+                <div><div class="ci-label">Phone / WhatsApp</div><a class="ci-value" href="https://wa.me/2347065848333" data-phone data-phone-text target="_blank" rel="noopener">+234 706 584 8333</a></div>
               </div>
               <div class="c-item" id="igContactRow" hidden>
                 <span class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.6" fill="currentColor" stroke="none"/></svg></span>
-                <div><div class="ci-label">Instagram</div><a class="ci-value" id="igContactLink" href="#" target="_blank" rel="noopener"></a></div>
+                <div><div class="ci-label">Instagram</div><a class="ci-value" id="igContactLink" data-ig data-ig-text href="#" target="_blank" rel="noopener"></a></div>
               </div>
               <div class="c-item">
                 <span class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 21s-7-5.4-7-11a7 7 0 1 1 14 0c0 5.6-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
@@ -406,12 +406,12 @@
             </div>
             <div class="socials" id="socials">
               <a href="#" id="igLink" data-ig aria-label="Instagram" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.6" fill="currentColor" stroke="none"/></svg></a>
-              <a href="mailto:oj.oyesola@gmail.com" aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></a>
+              <a href="mailto:oj.oyesola@gmail.com" data-email aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></a>
             </div>
           </div>
 
           <div class="form-panel reveal" data-delay="1">
-            <form id="bookingForm" novalidate>
+            <form id="bookingForm" method="post" novalidate>
               <div class="form-grid">
                 <div class="field">
                   <label for="f-first">First Name <span class="req">*</span></label>
@@ -468,7 +468,7 @@
                 </div>
               </div>
             </form>
-            <div class="form-success" id="formSuccess" hidden>
+            <div class="form-success" id="formSuccess" tabindex="-1" role="status" hidden>
               <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5"/></svg></span>
               <h3>Inquiry Received</h3>
               <p>Thank you for reaching out. Your inquiry has been recorded and you'll hear back within 24 hours to discuss your vision.</p>
@@ -487,9 +487,9 @@
         <div class="footer-brand">
           <a href="#" class="brand">OJ_Oyesola</a>
           <p>Portrait, event and wedding photography — crafted with artistry, warmth, and an obsession for the immortal.</p>
-          <a class="footer-ig" id="igFooterLink" href="#" target="_blank" rel="noopener" hidden>
+          <a class="footer-ig" id="igFooterLink" data-ig href="#" target="_blank" rel="noopener" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.6" fill="currentColor" stroke="none"/></svg>
-            <span id="igFooterText"></span></a>
+            <span id="igFooterText" data-ig-text></span></a>
         </div>
         <div class="footer-col">
           <h4>Explore</h4>
@@ -530,9 +530,9 @@
   </footer>
 
   <!-- ======= Collection gallery view ======= -->
-  <div class="collection-view" id="collectionView" role="dialog" aria-modal="true" aria-label="Collection gallery">
+  <dialog class="collection-view" id="collectionView" aria-labelledby="cvTitle">
     <div class="cv-top">
-      <button class="cv-back" id="cvBack">
+      <button class="cv-back" id="cvBack" autofocus>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M11 19l-7-7 7-7"/></svg>
         Back to portfolio</button>
       <span class="cv-count" id="cvCount"></span>
@@ -543,17 +543,16 @@
       <p class="cv-desc" id="cvDesc"></p>
     </div>
     <div class="cv-grid" id="cvGrid"></div>
-    <p class="cv-note" id="cvNote" hidden></p>
-  </div>
+  </dialog>
 
   <!-- ======= Lightbox ======= -->
-  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Portfolio image viewer">
+  <dialog class="lightbox" id="lightbox" aria-label="Portfolio image viewer">
     <div class="lb-top">
       <span class="lb-count" id="lbCount">— / —</span>
-      <button class="lb-close" id="lbClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button class="lb-close" id="lbClose" aria-label="Close" autofocus><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="lb-stage">
-      <img id="lbImg" src="" alt="">
+      <img id="lbImg" alt="" decoding="async">
       <div class="lb-nav">
         <button id="lbPrev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M11 19l-7-7 7-7"/></svg></button>
         <button id="lbNext" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></button>
@@ -566,16 +565,16 @@
       <a class="text-link" href="#contact" id="lbCta" style="margin-top:0.8rem">Book a similar session
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></a>
     </div>
-  </div>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
     <span id="toastMsg"></span>
   </div>
 
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/galleries.js"></script>
-  <script src="assets/js/forms.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script defer src="assets/js/config.js"></script>
+  <script defer src="assets/js/galleries.js"></script>
+  <script defer src="assets/js/forms.js"></script>
+  <script defer src="assets/js/main.js"></script>
 </body>
 </html>

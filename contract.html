@@ -73,7 +73,7 @@
 
         <!-- ===== Signature form ===== -->
         <div class="form-panel" style="margin-top:3.5rem" id="signPanel">
-          <form id="contractForm" novalidate>
+          <form id="contractForm" method="post" novalidate>
             <div class="form-grid">
               <div class="field">
                 <label for="c-first">First Name <span class="req">*</span></label>
@@ -120,14 +120,14 @@
               </div>
               <div class="span-2">
                 <button type="submit" class="btn btn--primary" style="width:100%">Sign &amp; Submit Agreement</button>
-                <p class="form-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg>A copy of your signed agreement is sent to you and to the photographer.</p>
+                <p class="form-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg>Your signed agreement is submitted to the photographer. Please request a copy for your records.</p>
               </div>
             </div>
           </form>
-          <div class="form-success" id="contractSuccess" hidden>
+          <div class="form-success" id="contractSuccess" tabindex="-1" role="status" hidden>
             <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5"/></svg></span>
             <h3>Agreement Signed</h3>
-            <p>Your signed contract has been submitted. A copy has been sent to your email and to the photographer. We look forward to working with you!</p>
+            <p>Your signed contract has been submitted to the photographer. Please contact us if you need a copy. We look forward to working with you!</p>
             <a class="btn btn--ghost" href="index.html">Back to the site</a>
           </div>
         </div>
@@ -156,8 +156,8 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/forms.js"></script>
-  <script src="assets/js/contract.js"></script>
+  <script defer src="assets/js/config.js"></script>
+  <script defer src="assets/js/forms.js"></script>
+  <script defer src="assets/js/contract.js"></script>
 </body>
 </html>

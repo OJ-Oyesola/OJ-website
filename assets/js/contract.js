@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   document.addEventListener("DOMContentLoaded", function () {
-    /* live signature preview in the brand script font */
+    /* Live signature preview in the handwriting font. */
     var input = document.getElementById("c-sig");
     var preview = document.getElementById("sigPreview");
     if (input && preview) {
@@ -17,11 +17,9 @@
         form,
         document.getElementById("contractSuccess"),
         "Signed Photography Service Agreement — OJ_Oyesola",
-        "Your email app is opening with the signed agreement pre-filled (see README to connect Formspree for automatic delivery)."
+        "Your email app is opening with the agreement. Please send the draft to submit your signature."
       );
     }
 
-    var y = document.getElementById("year");
-    if (y) y.textContent = new Date().getFullYear();
   });
 })();

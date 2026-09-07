@@ -1,154 +1,164 @@
 #!/usr/bin/env python3
-"""
-OJ_Oyesola — client gallery builder
-====================================
-Turns a folder of photos into a private, access-coded client gallery.
+"""Build an unlisted static client gallery (not server-authenticated storage).
 
-Usage
------
-    python3 tools/new_gallery.py \
-        --email    client@example.com \
-        --code     OJ-7KQ2-9XMP \
-        --title    "The Adewales" \
-        --subtitle "Portrait Session" \
-        --date     "December 2025" \
-        --dir      /path/to/photos \
-        [--expires 2026-12-15]          # optional; default = 12 months from today
-        [--external-url https://...]    # optional; gallery hosted elsewhere (Pixieset etc.)
+python3 tools/new_gallery.py --email client@example.com --code OJ-7KQ2-9XMP \
+    --title "The Adewales" --dir /path/to/photos
 
-What it does
-------------
-1. Copies + resizes every JPG/PNG into three sizes:
-       full/   (long edge 2000px — what clients download)
-       grid/   (long edge 1000px — what loads in the gallery grid)
-       thumbs/ (long edge 420px — lightweight previews)
-2. Writes  galleries/<sha256(email|CODE|salt)>/data.json
-3. Prints the exact email + code to send to the client.
-
-The client then signs in at  client.html  with that email + code.
-
-Requirements:  pip install Pillow     (see tools/requirements.txt)
-
-NOTE — the salt below must stay in sync with `salt` in assets/js/config.js.
+Alternatively, use --external-url https://example.com/gallery instead of --dir.
+Local photos require Pillow: pip install -r tools/requirements.txt
+The gallery salt is read directly from assets/js/config.js.
 """
 import argparse
 import datetime as dt
 import hashlib
 import json
-import pathlib
+from pathlib import Path
 import re
-import sys
+import tempfile
+from urllib.parse import urlsplit
 
-try:
-    from PIL import Image, ImageOps
-except ImportError:
-    sys.exit("Pillow is required:  pip install Pillow  (see tools/requirements.txt)")
-
-# -- Keep in sync with `salt` in assets/js/config.js -------------------------
-SALT = "f90fab92741ea744b18d7471c6ad555e"
-# -----------------------------------------------------------------------------
-
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 GALLERIES = ROOT / "galleries"
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def gallery_hash(email: str, code: str) -> str:
-    payload = f"{email.strip().lower()}|{code.strip().upper()}|{SALT}"
+    config = (ROOT / "assets/js/config.js").read_text(encoding="utf-8")
+    match = re.search(r'^\s*salt\s*:\s*("(?:[^"\\]|\\.)*")\s*,?\s*$', config, re.MULTILINE)
+    if not match or not (salt := json.loads(match.group(1))):
+        raise ValueError('Set a non-empty, double-quoted salt in assets/js/config.js.')
+    payload = f"{email.strip().lower()}|{code.strip().upper()}|{salt}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def slugify(text: str) -> str:
-    return re.sub(r"[^\w\-]+", "-", (text or "gallery").lower()).strip("-")[:40] or "gallery"
+def expiry_date(value: str) -> str:
+    try:
+        parsed = dt.date.fromisoformat(value)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError("Expiry must be a valid YYYY-MM-DD date.") from err
+    if parsed.isoformat() != value:
+        raise argparse.ArgumentTypeError("Expiry must use YYYY-MM-DD.")
+    return value
 
 
-def save_resized(img: Image.Image, out_path: pathlib.Path, long_edge: int, quality: int = 86) -> tuple[int, int]:
-    img = img.copy()
-    img = img.convert("RGB")
-    w, h = img.size
-    scale = long_edge / max(w, h)
-    if scale < 1:
-        img = img.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
-    img.save(out_path, "JPEG", quality=quality, optimize=True, progressive=True)
-    return img.size
+def external_url(value: str) -> str:
+    try:
+        url = urlsplit(value)
+        valid = url.scheme in {"https", "http"} and url.hostname and not url.username and not url.password
+    except ValueError:
+        valid = False
+    if not valid:
+        raise argparse.ArgumentTypeError("External gallery URL must be an absolute HTTP(S) URL without credentials.")
+    return value
 
 
-def build(args: argparse.Namespace) -> None:
-    src_dir = pathlib.Path(args.dir).expanduser().resolve()
-    if not src_dir.is_dir():
-        sys.exit(f"Photo folder not found: {src_dir}")
+def default_expiry() -> str:
+    today = dt.date.today()
+    try:
+        return today.replace(year=today.year + 1).isoformat()
+    except ValueError:  # February 29 has no counterpart next year.
+        return today.replace(year=today.year + 1, day=28).isoformat()
 
-    files = sorted(
-        p for p in src_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in EXTENSIONS and not p.name.startswith(".")
-    )
-    if not files:
-        sys.exit(f"No JPG/PNG/WebP images found in {src_dir}")
-    if not args.email or not args.code:
-        sys.exit("--email and --code are required")
 
-    h = gallery_hash(args.email, args.code)
-    dest = GALLERIES / h
-    if dest.exists() and not args.force:
-        sys.exit(
-            f"A gallery already exists for this email+code at {dest}.\n"
-            f"Use --force to overwrite it."
-        )
+def save_resized(image, path: Path, long_edge: int, quality: int = 86):
+    from PIL import Image
+    resized = image.copy()
+    resized.thumbnail((long_edge, long_edge), Image.Resampling.LANCZOS)
+    resized.save(path, "JPEG", quality=quality, optimize=True, progressive=True)
+    return resized.size
 
-    for sub in ("full", "grid", "thumbs"):
-        (dest / sub).mkdir(parents=True, exist_ok=True)
 
-    photos = []
-    for i, src in enumerate(files, start=1):
-        name = f"{i:03d}"
-        with Image.open(src) as img:
-            img = ImageOps.exif_transpose(img)  # respect EXIF rotation
-            w, hgt = save_resized(img, dest / "full" / f"{name}.jpg", 2000, quality=90)
-            save_resized(img, dest / "grid" / f"{name}.jpg", 1000)
-            save_resized(img, dest / "thumbs" / f"{name}.jpg", 420, quality=80)
-        photos.append({
-            "full": f"full/{name}.jpg",
-            "grid": f"grid/{name}.jpg",
-            "thumb": f"thumbs/{name}.jpg",
-            "w": w,
-            "h": hgt,
-        })
-        print(f"  processed {src.name}  ->  {name}.jpg ({w}x{hgt})")
-
-    data = {
-        "title": args.title or "Your Gallery",
-        "subtitle": args.subtitle or "",
-        "date": args.date or "",
-        "expires": args.expires or (dt.date.today() + dt.timedelta(days=365)).isoformat(),
-        "photos": photos,
-    }
+def build(args: argparse.Namespace) -> Path:
+    if not args.email.strip() or "@" not in args.email or not args.code.strip():
+        raise ValueError("A client email and a non-empty access code are required.")
+    if bool(args.dir) == bool(args.external_url):
+        raise ValueError("Provide either --dir or --external-url, not both.")
+    if args.expires:
+        expiry_date(args.expires)
     if args.external_url:
-        data["externalUrl"] = args.external_url
+        external_url(args.external_url)
 
-    (dest / "data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+    files = []
+    if args.dir:
+        from PIL import Image, ImageOps
+        source = Path(args.dir).expanduser().resolve()
+        if not source.is_dir():
+            raise ValueError(f"Photo folder not found: {source}")
+        files = sorted(p for p in source.iterdir()
+                       if p.is_file() and p.suffix.lower() in EXTENSIONS and not p.name.startswith("."))
+        if not files:
+            raise ValueError(f"No JPG/PNG/WebP images found in {source}")
 
-    print("\n✓ Gallery created")
-    print(f"  Location : galleries/{h}/  ({len(photos)} photos)")
-    print(f"  Login at : client.html")
-    print(f"  Email    : {args.email.strip().lower()}")
-    print(f"  Code     : {args.code.strip().upper()}")
-    if not args.external_url:
-        print(f"  Expires  : {data['expires']}")
-    print("\nSend the email + code above to your client. That's all they need.")
+    gallery_id = gallery_hash(args.email, args.code)
+    dest = GALLERIES / gallery_id
+    if dest.exists() and not args.force:
+        raise ValueError(f"A gallery already exists at {dest}. Use --force to replace it.")
+
+    GALLERIES.mkdir(parents=True, exist_ok=True)
+    # Finish processing first. A corrupt input must never damage an existing delivery.
+    with tempfile.TemporaryDirectory(prefix=".gallery-", dir=GALLERIES) as temp:
+        staged = Path(temp) / "new"
+        staged.mkdir()
+        if files:
+            for sub in ("full", "grid", "thumbs"):
+                (staged / sub).mkdir()
+        photos = []
+        for i, src in enumerate(files, start=1):
+            name = f"{i:03d}.jpg"
+            with Image.open(src) as original:
+                image = ImageOps.exif_transpose(original).convert("RGB")
+                width, height = save_resized(image, staged / "full" / name, 2000, quality=90)
+                save_resized(image, staged / "grid" / name, 1000)
+                save_resized(image, staged / "thumbs" / name, 420, quality=80)
+            photos.append({"full": f"full/{name}", "grid": f"grid/{name}", "thumb": f"thumbs/{name}",
+                           "w": width, "h": height})
+            print(f"  processed {src.name} -> {name} ({width}x{height})")
+
+        data = {"title": args.title, "subtitle": args.subtitle, "date": args.date,
+                "expires": args.expires or default_expiry(), "photos": photos}
+        if args.external_url:
+            data["externalUrl"] = args.external_url
+        (staged / "data.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+        backup = Path(temp) / "previous"
+        if dest.exists():
+            dest.rename(backup)
+        try:
+            staged.rename(dest)
+        except OSError:
+            if backup.exists():
+                backup.rename(dest)
+            raise
+        # TemporaryDirectory removes the previous version, including stale photos.
+
+    print(f"\nGallery created: galleries/{gallery_id}/ ({len(photos)} photos)")
+    print(f"Login at: client.html\nEmail: {args.email.strip().lower()}\nCode: {args.code.strip().upper()}")
+    print(f"Expires: {data['expires']} (end of day, UTC)")
+    return dest
 
 
-def main() -> None:
-    p = argparse.ArgumentParser(description="Build a private OJ_Oyesola client gallery.")
-    p.add_argument("--email", required=True, help="client's email (what they'll type to log in)")
-    p.add_argument("--code", required=True, help="access code, e.g. OJ-7KQ2-9XMP")
-    p.add_argument("--title", default="Your Gallery", help="gallery title, e.g. 'The Adewales'")
-    p.add_argument("--subtitle", default="", help="e.g. 'Portrait Session'")
-    p.add_argument("--date", default="", help="display date, e.g. 'December 2025'")
-    p.add_argument("--dir", required=True, help="folder containing the client's photos")
-    p.add_argument("--expires", default="", help="YYYY-MM-DD; defaults to 12 months out")
-    p.add_argument("--external-url", default="", help="host gallery elsewhere (Pixieset, Pic-Time…)")
-    p.add_argument("--force", action="store_true", help="overwrite an existing gallery for this email+code")
-    build(p.parse_args())
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--email", required=True, help="client's email")
+    parser.add_argument("--code", required=True, help="access code, e.g. OJ-7KQ2-9XMP")
+    parser.add_argument("--title", default="Your Gallery")
+    parser.add_argument("--subtitle", default="", help="e.g. Portrait Session")
+    parser.add_argument("--date", default="", help="display date, e.g. December 2026")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--dir", help="folder containing the client's photos")
+    source.add_argument("--external-url", type=external_url, help="gallery hosted elsewhere")
+    parser.add_argument("--expires", type=expiry_date, help="YYYY-MM-DD; defaults to 12 months out")
+    parser.add_argument("--force", action="store_true", help="replace an existing gallery, including its old photos")
+    return parser.parse_args(argv)
+
+
+def main():
+    try:
+        build(parse_args())
+    except ImportError as err:
+        raise SystemExit("Local photos require Pillow: pip install -r tools/requirements.txt") from err
+    except (OSError, ValueError, argparse.ArgumentTypeError) as err:
+        raise SystemExit(str(err)) from err
 
 
 if __name__ == "__main__":

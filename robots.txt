@@ -2,6 +2,7 @@
 User-agent: *
 Allow: /
 Disallow: /galleries/
+Disallow: /OJ-website/galleries/
 
 # Update the URL below when a custom domain is attached (see README)
 Sitemap: https://oj-oyesola.github.io/OJ-website/sitemap.xml
