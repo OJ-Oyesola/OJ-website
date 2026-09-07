@@ -96,22 +96,30 @@
   function initHero() {
     var hero = $("#hero");
     if (!hero) return;
-    var img = $(".hero-media img", hero);
+    var frames = $$(".hero-media img", hero);
     var mark = function () { setTimeout(function () { hero.classList.add("is-loaded"); }, prefersReduced ? 0 : 120); };
-    if (!img) { mark(); return; }
-    var settle = function () { mark(); };
-    img.addEventListener("load", settle);
-    img.addEventListener("error", function () {
-      if (img.getAttribute("data-fallback") !== "1") {
-        img.setAttribute("data-fallback", "1");
-        img.src = "assets/img/hero.jpg"; /* graceful fallback */
+    if (!frames.length) { mark(); return; }
+
+    var pool = HEROES.slice(); /* drawn without replacement, so the two desktop
+                                  frames are never the same photo */
+    var pending = frames.length;
+    var settle = function () { if (--pending <= 0) mark(); };
+
+    frames.forEach(function (img) {
+      img.addEventListener("load", settle);
+      img.addEventListener("error", function () {
+        if (img.getAttribute("data-fallback") !== "1") {
+          img.setAttribute("data-fallback", "1");
+          img.src = "assets/img/hero.jpg"; /* graceful fallback */
+          return; /* the retry settles through its own load/error */
+        }
+        settle();
+      });
+      if (pool.length) {
+        img.src = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
       }
-      settle();
+      if (img.complete) { img.removeEventListener("load", settle); settle(); }
     });
-    if (HEROES.length) {
-      img.src = pick(HEROES); /* the hero photo rotates on every page load */
-    }
-    if (img.complete) { img.removeEventListener("load", settle); settle(); }
   }
 
   /* ---------- Scroll indicator ---------- */
