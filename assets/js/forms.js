@@ -1,80 +1,86 @@
-/* ==========================================================================
-   OJ_Oyesola — shared form handling (Formspree + graceful fallback)
-   Used by index.html (booking) and contract.html (agreement).
-   ========================================================================== */
+/* Shared Formspree handling. An email draft is not a confirmed submission. */
 (function () {
   "use strict";
   var CFG = window.OJ_CONFIG || {};
+  var toastTimer;
 
-  var toastTimer = null;
   function toast(msg) {
     var t = document.getElementById("toast");
     if (!t) return;
     t.querySelector("#toastMsg, span").textContent = msg;
     t.classList.add("is-visible");
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("is-visible"); }, 5600);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("is-visible"); }, 8000);
   }
 
   function serialize(form) {
-    var data = {};
-    Array.prototype.forEach.call(form.querySelectorAll("input, select, textarea"), function (el) {
-      if (!el.name || el.name.charAt(0) === "_") return;
-      if (el.type === "checkbox" || el.type === "radio") {
-        if (el.checked) data[el.name] = el.value;
-        return;
-      }
-      if (el.type === "submit" || el.type === "button") return;
-      if (el.type !== "file") data[el.name] = el.value;
+    var data = Object.create(null);
+    // FormData honours disabled fields, unchecked controls and repeated names.
+    new FormData(form).forEach(function (value, name) {
+      if (typeof value !== "string") return;
+      data[name] = name in data ? [].concat(data[name], value) : value;
     });
     return data;
   }
 
   function mailtoFallback(data, subject) {
     var lines = [subject, ""];
-    Object.keys(data).forEach(function (k) {
-      if (data[k]) {
-        var label = k.replace(/_/g, " ").replace(/^\w/, function (c) { return c.toUpperCase(); });
-        lines.push(label + ": " + data[k]);
+    Object.keys(data).forEach(function (key) {
+      if (data[key] && key.charAt(0) !== "_") {
+        var label = key.replace(/_/g, " ").replace(/^\w/, function (c) { return c.toUpperCase(); });
+        lines.push(label + ": " + data[key]);
       }
     });
     window.location.href = "mailto:" + (CFG.email || "oj.oyesola@gmail.com") +
-      "?subject=" + encodeURIComponent(subject) +
-      "&body=" + encodeURIComponent(lines.join("\n"));
+      "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(lines.join("\n"));
   }
 
   function handle(form, successPanel, subject, fallbackNote) {
-    form.addEventListener("submit", function (e) {
+    var sending = false;
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
+      if (sending) return;
       if (!form.checkValidity()) { form.reportValidity(); return; }
       var data = serialize(form);
       var id = (CFG.formspreeId || "").trim();
-      var btn = form.querySelector('button[type="submit"]');
-      var btnLabel = btn ? btn.innerHTML : "";
+      if (!id) {
+        toast(fallbackNote || "Your email app is opening. Please send the draft to complete your submission.");
+        mailtoFallback(data, subject);
+        return;
+      }
 
-      if (id) {
-        if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
-        fetch("https://formspree.io/f/" + id, {
+      var btn = form.querySelector('button[type="submit"]');
+      var label = btn ? btn.innerHTML : "";
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 20000);
+      sending = true;
+      form.setAttribute("aria-busy", "true");
+      if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+      try {
+        var res = await fetch("https://formspree.io/f/" + encodeURIComponent(id), {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(Object.assign({ _subject: subject }, data))
-        }).then(function (res) {
-          if (res.ok) { form.hidden = true; if (successPanel) successPanel.hidden = false; }
-          else throw new Error("Formspree " + res.status);
-        }).catch(function () {
-          toast("Couldn't send right now — opening your email app instead.");
-          mailtoFallback(data, subject);
-        }).finally(function () {
-          if (btn) { btn.disabled = false; btn.innerHTML = btnLabel; }
+          body: JSON.stringify(Object.assign(data, { _subject: subject })),
+          signal: controller.signal
         });
-      } else {
-        mailtoFallback(data, subject);
-        toast(fallbackNote);
+        if (!res.ok) throw new Error("Formspree " + res.status);
         form.hidden = true;
-        if (successPanel) successPanel.hidden = false;
+        if (successPanel) {
+          successPanel.hidden = false;
+          successPanel.focus();
+        }
+        form.dispatchEvent(new CustomEvent("oj:form-success"));
+      } catch (err) {
+        toast("Delivery wasn't confirmed. Retry, or send the draft in your email app. Your details are still here.");
+        mailtoFallback(data, subject);
+      } finally {
+        clearTimeout(timeout);
+        sending = false;
+        form.removeAttribute("aria-busy");
+        if (btn) { btn.disabled = false; btn.innerHTML = label; }
       }
     });
   }
 
-  window.OJForms = { handle: handle, toast: toast };
+  window.OJForms = { handle: handle };
 })();

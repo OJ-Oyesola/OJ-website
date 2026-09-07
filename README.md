@@ -1,212 +1,226 @@
 # OJ_Oyesola — Photography Website & Client Gallery
 
-A minimalist portfolio and client image-delivery platform for **OJ_Oyesola**
+A minimalist portfolio and client image-delivery site for **OJ_Oyesola**
 (portrait, event & wedding photography — Ibadan, Nigeria).
 
-Built as a **pure static site** — no build step, no framework, no server bills.
-Every page is hand-crafted HTML/CSS/JS that can be hosted anywhere for free.
-
----
+**Pure static HTML/CSS/JS:** no framework, production npm installation, server API or
+build step required to serve the site. Python tools generate gallery data when
+photos change; Node.js is used only for development checks.
 
 ## Pages
 
 | Page | Purpose |
 |---|---|
-| `index.html` | Home, selected work, portfolio, packages, testimonials, about, FAQ, booking form |
-| `client.html` | **Client portal** — clients log in with email + access code to view/download/order prints |
-| `contract.html` | Booking agreement + typed e-signature |
-| `privacy.html` / `terms.html` | Legal (content as provided by OJ) |
-| `404.html` | Custom not-found page |
+| `index.html` | Selected work, portfolio, packages, testimonials, about, FAQ and booking |
+| `client.html` | Email + access-code gallery lookup, selection, downloads and print requests |
+| `contract.html` | Booking agreement and typed-signature form |
+| `privacy.html` / `terms.html` | Legal information |
+| `404.html` | Not-found page, including nested GitHub Pages URLs |
 
----
-
-## Run it locally
-
-Any static server works:
+## Preview locally
 
 ```bash
-cd OJ-website
-python3 -m http.server 8000
-# → http://localhost:8000
+python3 -m http.server 8000 --bind 0.0.0.0
+# Open http://localhost:8000
 ```
 
-> Note: the client portal uses the browser's Web Crypto API, which requires
-> `http://localhost` or HTTPS — both are satisfied on GitHub Pages and any
-> real host. Opening `client.html` directly from disk (`file://`) will not work.
+The client portal requires HTTPS or `http://localhost` for Web Crypto. Open it
+through a server, not `file://`. The site uses current-browser features including
+native dialogs, `inert` and CSS `:has()`.
 
-**Try the demo galleries:** open `client.html` → email `demo@oj-oyesola.com`,
-code `OJ-DEMO` (portrait session) or `OJ-WEDDING` (wedding).
+**Demo galleries:** open `client.html`, use `demo@oj-oyesola.com` with `OJ-DEMO`
+(portraits) or `OJ-WEDDING` (wedding).
 
----
+## Development checks
 
-## Deploy (recommended: GitHub Pages — free)
+Requires **Node.js 22.13+** and **Python 3.11+**:
 
-1. Push this repository to GitHub (already done in this workspace).
-2. On GitHub: **Settings → Pages → Source: Deploy from a branch → `main` → `/ (root)` → Save**.
-3. Your site goes live at `https://<username>.github.io/OJ-website/`.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r tools/requirements.txt
+npm ci
+npx playwright install chromium     # Linux CI: add --with-deps
+npm run check                      # lint, manifest freshness, links/assets, Python tests
+npm test                           # desktop + mobile Chromium browser tests
+```
 
-### Custom domain (optional, recommended)
+Tests serve the site under a repository subpath, as GitHub Pages does. They
+cover gallery navigation, focus, responsive layout, booking/contract validation,
+client access, expiry, ZIP contents, download failures and cancellation.
+**Formspree requests are mocked; tests never submit real inquiries or agreements.**
+ZIP tests use the pinned development copy of JSZip, not the live CDN.
 
-1. Buy a domain (e.g. `oj-oyesola.com` — ~₦5–15k/yr from QServers, Whogohost, Namecheap…).
-2. In **Settings → Pages → Custom domain**, enter it and follow the DNS instructions
-   (an `A` record / `CNAME` at your registrar).
-3. Then update the placeholder domain in **three places**:
-   - `index.html` → `og:image` meta tag
-   - `sitemap.xml` → every `<loc>` and `robots.txt` → `Sitemap:` line
-4. Tick **Enforce HTTPS** in the Pages settings.
+A preinstalled Chromium can be used by setting `CHROMIUM_EXECUTABLE_PATH`.
+`node_modules`, browser reports, caches and virtual environments are ignored by Git.
+GitHub Actions runs these checks on pull requests and pushes to `main`.
 
----
+## Deployment — GitHub Pages
+
+The repository's Pages source is **`main` → `/ (root)`**. The current site is:
+
+**https://oj-oyesola.github.io/OJ-website/**
+
+Pushing a working branch backs up its changes but **does not deploy them**.
+Merge its pull request into `main`, then check the **pages build and deployment**
+run in GitHub Actions. No production `npm install` or build is needed.
+
+### Custom domain
+
+Configure the domain in **Settings → Pages**, follow GitHub's DNS instructions,
+and enable **Enforce HTTPS**. Update:
+
+- `index.html`: Open Graph image/domain metadata.
+- `sitemap.xml`: the public page URLs.
+- `robots.txt`: the sitemap URL and gallery path for the chosen site root.
+- `404.html`: the project-prefix check if the repository path changes.
+
+`robots.txt` is only honoured at an origin's root; a project-site copy is not an
+access-control mechanism. Pages marked `noindex` are excluded from the sitemap.
 
 ## Configuration — `assets/js/config.js`
 
-Everything editable in one small file:
-
-| Key | What it does |
+| Key | Purpose |
 |---|---|
-| `formspreeId` | **Connect the forms to your email.** Create a free form at [formspree.io](https://formspree.io) (free tier = 50 submissions/month), copy the ID from your endpoint `https://formspree.io/f/XXXXXXXX` into this field. Until set, the booking + contract forms gracefully fall back to opening the visitor's email app pre-filled. |
-| `email` / `phoneDisplay` / `whatsapp` | Contact details shown around the site. |
-| `instagram` | Your handle **without** the `@`. The Instagram links appear automatically once set. |
-| `salt` | Secret string used to hash client gallery logins. **Change it once before going live** (any long random string), then update the same value in `tools/new_gallery.py`. |
+| `formspreeId` | Formspree endpoint ID for booking and contract submissions. Currently `xnpqbjky`. When blank, forms open a prefilled email draft. |
+| `email` / `phoneDisplay` / `whatsapp` | Contact links and labelled contact values. WhatsApp uses international digits only. |
+| `instagram` | Handle without `@`; leave blank to hide Instagram links. |
+| `salt` | **Public lookup namespace, not a secret.** The gallery builder reads this directly from config; keep it double-quoted. Changing it invalidates existing gallery logins unless those galleries are regenerated. |
 
----
+Only a successful Formspree response displays a delivery confirmation and
+remembers a booking as sent. Invalid forms, network errors and email drafts
+remain editable and are never remembered as delivered. Visitors must actually
+send an email draft themselves. The old, unreliable `oj_inquiry_sent` flag is
+cleared; confirmed inquiries use `oj_inquiry_confirmed`.
 
-## Delivering photos to a client (the everyday flow)
+Formspree notifications/autoresponses must be configured in the Formspree
+account. The website does not itself send the client a copy of an agreement.
+Legal prose and structured metadata are static; review those when contact or
+business details change.
 
-1. Put the client's finished photos in a folder on your computer (JPGs, any size).
-2. Run:
+## Important: gallery privacy and expiry
+
+**This is an unlisted static delivery system, not authenticated private storage.**
+The portal hashes `email|CODE|salt` to locate `galleries/<sha256>/data.json`.
+There is no server checking permission to retrieve the JSON or image files.
+
+- Anyone with a gallery/file URL can access it directly.
+- In a public GitHub repository, gallery paths and photos can also be discovered
+  in the repository and its history, regardless of access codes.
+- Expiry hides photos and delivery controls in the portal after the configured
+  date (end of day, **UTC**). It does **not** revoke direct URLs or remove files
+  from the host or Git history.
+- Hashing and `robots.txt` must not be relied on for confidentiality.
+
+Only publish photos approved for public hosting here. For genuinely private
+client deliveries, use a gallery provider with enforced access controls, or a
+backend with authentication and protected storage. Do not commit sensitive
+client images and assume an access code makes them private.
+
+## Create a client gallery
+
+1. Install Pillow once: `pip install -r tools/requirements.txt`.
+2. Put approved photos in a folder and run:
 
    ```bash
-   pip install Pillow                      # once
    python3 tools/new_gallery.py \
-     --email    client@example.com \
-     --code     OJ-7KQ2-9XMP \
-     --title    "Ayo & Ola" \
+     --email client@example.com \
+     --code OJ-7KQ2-9XMP \
+     --title "Ayo & Ola" \
      --subtitle "Wedding" \
-     --date     "March 2026" \
-     --dir      /path/to/their-photos
+     --date "September 2026" \
+     --dir /path/to/photos
    ```
 
-3. Commit + push (or re-run deploy). The gallery appears instantly at
-   `client.html` when the client enters **that exact email + code**.
-4. Message the client their email + code. They can **select, download,
-   request prints, and browse full-screen** — gallery auto-expires after
-   12 months (customise with `--expires`).
+3. Commit the generated gallery, push the working branch, and merge into the
+   Pages source branch. Wait for deployment before sharing the login details.
 
-For very large weddings, you can instead point a gallery at an external host:
+The tool respects EXIF orientation, never upscales, and writes:
+
+- `full/`: JPEGs up to 2000px on the long edge (client downloads).
+- `grid/`: JPEGs up to 1000px (gallery display).
+- `thumbs/`: 420px previews.
+- `data.json`: titles, paths, dimensions and expiry (12 calendar months by default).
+
+Use `--expires YYYY-MM-DD` to set another expiry. Existing galleries are protected
+unless `--force` is supplied. Replacement outputs are staged first; failed image
+processing leaves the existing delivery intact. Successful replacement removes
+stale files from the previous version. Keep your original photos separately.
+
+### Externally hosted galleries
+
+Use `--external-url` **instead of** `--dir`; no local images or Pillow are needed:
 
 ```bash
-python3 tools/new_gallery.py --email ... --code ... --title "..." \
-  --external-url "https://pixieset.com/your-gallery"
+python3 tools/new_gallery.py \
+  --email client@example.com --code OJ-7KQ2-9XMP --title "Ayo & Ola" \
+  --external-url "https://example.com/your-gallery"
 ```
 
-The portal then shows a card linking the client there.
+The portal shows the external link rather than empty selection/download tools.
+Choose a provider with appropriate privacy settings for confidential deliveries.
 
-**How private is it?** The same model used by Pixieset/Pic-Time "unlisted"
-galleries: there is no list of galleries anywhere in the code — the folder name
-is a SHA-256 hash of email + code + salt, so nobody can stumble on a gallery
-without both pieces. (True password *authentication* would require a paid
-backend; if you ever need it, that's the upgrade path.)
+### Client selection and downloads
 
----
+Clients can browse full-screen, select individual photos or all photos, and
+request prints by email. Single-photo downloads are direct. Multiple photos use
+one ZIP, with up to three concurrent image requests and progress feedback.
+JSZip is loaded on demand from a version-pinned CDN URL with an integrity hash;
+if unavailable, the portal falls back to individual downloads (the browser may
+ask for permission). Failed photo requests do not produce incomplete ZIPs.
+Signing out cancels a pending batch. Large deliveries are better hosted externally,
+since ZIP generation holds the selected files in browser memory.
 
-## Swapping in real photography
+## Portfolio photography
 
-The portfolio is driven by the **real shoot folders** at the repo root (see
-"Adding photos to a portfolio collection" below). A handful of static assets
-still live under `assets/img/` and are used by name:
+The homepage contains **20 collections / 523 photos**, five hero images and one
+about portrait — 529 real photos in total. The original photo files are preserved.
 
-| Slot | Files |
+1. Add a photo to a top-level shoot folder, such as `Couples/`.
+2. For a new collection, add its `id / folder / title / category / blurb` to
+   `GALLERIES` in `tools/build_galleries.py`.
+3. Run `python3 tools/build_galleries.py` and include the updated
+   `assets/js/galleries.js` in the same change.
+
+The generated manifest lists `{src, w, h}` per photo, plus the hero pool and
+selected-work IDs. Dimensions reserve the right space before lazy loading;
+URL encoding supports spaces, ampersands and other special filename characters.
+The generator reads dimensions without decoding full images and scans each
+folder once. `--check` verifies freshness without modifying files.
+
+Collection covers rotate on page load; collection photos shuffle when opened.
+The desktop hero shows two distinct frames where space allows, while mobile
+loads only the visible frame. A failed/slow image never permanently hides the
+hero heading or booking links. Native dialogs provide gallery focus isolation,
+keyboard navigation, and one-layer-at-a-time Escape dismissal.
+
+| Static image | Purpose |
 |---|---|
-| Hero | `assets/img/hero.jpg` (16:9) — **error-fallback only**. The hero paints the real `Hero Images/` pool; this file is never shown unless one of those fails to load |
-| About portrait | `About Page/IMG_9627BW.jpg` (4:5, 1115×1394) — URL-encoded as `About%20Page/…` in `index.html` |
-| Social share | `assets/img/og.jpg` (`og:image`) |
-| Favicons | `assets/img/favicon.svg`, `favicon-32.png`, `favicon-180.png` |
+| `assets/img/hero.jpg` | Error fallback for the real hero pool |
+| `About Page/IMG_9627BW.jpg` | About portrait, referenced directly in `index.html` |
+| `assets/img/og.jpg` | Social share image |
+| `assets/img/favicon*` | Favicons and touch icon |
 
-Replace a file **keeping the same name**, sized similarly — done.
+## Fonts
 
-### Adding photos to a portfolio collection
+Self-hosted Cormorant Garamond (display), Instrument Sans (UI) and Great Vibes
+(signature/fallback) use OFL licences. The **Wedding Ampersand** files live at
+`assets/fonts/wedding-ampersand.{ttf,woff2}` and are reserved for the `OJ_Oyesola`
+wordmark and the “OJ.” About sign-off. Missing glyphs fall back to Great Vibes.
 
-Clicking a portfolio tile opens a **collection gallery** (bento grid of that
-collection's photos → click any frame for the full-screen viewer). Photos live
-in the **top-level shoot folders** at the repo root — one gallery per folder —
-and the manifest is *generated*, not hand-edited:
-
-1. Drop the photo into the shoot folder (e.g. `Couples/IMG_9999.jpg`). To add a
-   new collection, create the folder and add its `id / folder / title / cat /
-   blurb` entry to `GALLERIES` in `tools/build_galleries.py`.
-2. Regenerate the manifest from the repo root:
-   `python3 tools/build_galleries.py`
-   — this rewrites `assets/js/galleries.js` (`OJ_GALLERIES`, `OJ_HEROES`,
-   `OJ_ABOUT`) straight from what is on disk.
-
-Each tile's cover is picked at random from that gallery's photos on every page
-load, so no separate cover image needs maintaining.
-
-### Client portal — selection & downloads
-
-The gallery toolbar has **Select photos** (tap photos to pick, or Select all),
-**Download all**, and **Request prints**. Downloads are bundled into a single
-**.zip** (via JSZip from CDN, with a graceful one-by-one fallback if the CDN
-is blocked). A floating action bar tracks the selection.
-
----
-
-## Brand font — “Wedding Ampersand” ✓ installed
-
-The real font lives at `assets/fonts/wedding-ampersand.ttf` (+ optimized
-`.woff2`). **It is reserved for exactly two places** — the `OJ_Oyesola`
-wordmark (header, footer, portal, favicons, social-preview image) and the
-“OJ.” of the About sign-off. Every other script-feeling accent (hero
-“forever.”, portal headings, the 404 page) uses *Cormorant Garamond* italic;
-the contract signature preview uses *Great Vibes*. If you ever replace the
-font file, keep the same names.
-
-Notes:
-- The font contains A–Z, a–z, comma, and period. Characters it lacks
-  (underscore, digits, ampersand…) automatically fall back to *Great Vibes*
-  per-glyph, so nothing ever renders as boxes.
-- To update the social-preview image or favicons after a font change, the
-  scripts that generated them are reproducible — just ask for a rebuild.
-- **Licensing:** *Wedding Ampersand* (Azetype Std.) is free for personal use;
-  embedding it in a commercial website technically requires a licence from
-  Creative Market (~$15–20).
-
-## Other fonts (self-hosted, free — OFL)
-
-- **Cormorant Garamond** — display serif
-- **Instrument Sans** — UI/body
-- **Great Vibes** — script fallback
-
----
+**Licensing:** Wedding Ampersand (Azetype Std.) is free for personal use; confirm
+a commercial web-embedding licence before using it commercially.
 
 ## Structure
 
+```text
+├── *.html                         # public static pages
+├── assets/css/                    # shared design + client styles
+├── assets/js/                     # config, forms, main, client, contract, generated galleries
+├── assets/fonts/ · assets/img/    # static brand assets
+├── <shoot folders>/               # original portfolio photographs
+├── galleries/<sha256>/            # client data + full/grid/thumbs images
+├── tools/                         # gallery generators and offline site checks
+├── tests/                         # Python unit + desktop/mobile browser tests
+└── .github/workflows/check.yml    # automated checks (not a deployment workflow)
 ```
-├── index.html            # main one-page site
-├── client.html           # client portal (login → gallery)
-├── contract.html         # booking agreement + e-sign
-├── privacy.html          # privacy policy
-├── terms.html            # terms & conditions
-├── 404.html              # custom not-found
-├── robots.txt · sitemap.xml · site.webmanifest
-├── assets/
-│   ├── css/              # main.css (site) · client.css (portal)
-│   ├── js/               # config.js ← edit this · collections.js · main/client/contract/forms.js
-│   ├── fonts/            # self-hosted woff2
-│   └── img/              # hero, about, features, covers/, collections/, og, favicons
-├── galleries/            # one folder per client gallery (hashed)
-│   └── <sha256>/         # data.json + full/ + grid/ + thumbs/
-└── tools/
-    └── new_gallery.py    # builds a client gallery from a photo folder
-```
-
----
-
-## Maintenance checklist
-
-- [x] Set `formspreeId` in `assets/js/config.js` → `xnpqbjky` ✓
-- [x] Set `instagram` handle → `oj_oyesola` ✓
-- [ ] Replace placeholder images with real photography
-- [x] Drop in the real brand font ✓ (`assets/fonts/wedding-ampersand.{ttf,woff2}`)
-- [ ] Change `salt` (config.js **and** tools/new_gallery.py) before first real delivery
-- [ ] Update `og:image` / sitemap / robots URLs when the custom domain is attached

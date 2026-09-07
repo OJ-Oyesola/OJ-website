@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 — OJ_Oyesola Photography</title>
   <meta name="robots" content="noindex">
+  <script>
+    // GitHub Pages serves this document at the missing URL, including nested paths.
+    var base = document.createElement("base");
+    base.href = location.pathname.startsWith("/OJ-website/") ? "/OJ-website/" : "/";
+    document.head.appendChild(base);
+  </script>
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
   <link rel="stylesheet" href="assets/css/main.css">
   <style>
