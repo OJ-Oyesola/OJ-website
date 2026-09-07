@@ -117,7 +117,7 @@ still live under `assets/img/` and are used by name:
 
 | Slot | Files |
 |---|---|
-| Hero | `assets/img/hero.jpg` (16:9, ~1920px wide) — preload + JS fallback for the rotating `Hero Images/` pool |
+| Hero | `assets/img/hero.jpg` (16:9) — **error-fallback only**. The hero paints the real `Hero Images/` pool; this file is never shown unless one of those fails to load |
 | About portrait | `About Page/IMG_9627BW.jpg` (4:5, 1115×1394) — URL-encoded as `About%20Page/…` in `index.html` |
 | Social share | `assets/img/og.jpg` (`og:image`) |
 | Favicons | `assets/img/favicon.svg`, `favicon-32.png`, `favicon-180.png` |
