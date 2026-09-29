@@ -57,6 +57,7 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
       - name: Resolve resource names
+        id: names
         run: |
           set -euo pipefail
           suffix=$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr '[:upper:]' '[:lower:]' | tail -c 9)
@@ -68,6 +69,8 @@ jobs:
           if [ -z "$preview_bucket" ] || [ "$preview_bucket" = "oj-website-media-preview" ]; then
             preview_bucket="oj-website-media-preview-$suffix"
           fi
+          echo "media_bucket=$media_bucket" >> "$GITHUB_OUTPUT"
+          echo "preview_bucket=$preview_bucket" >> "$GITHUB_OUTPUT"
           echo "CF_R2_MEDIA_BUCKET=$media_bucket" >> "$GITHUB_ENV"
           echo "CF_R2_MEDIA_PREVIEW_BUCKET=$preview_bucket" >> "$GITHUB_ENV"
           {
@@ -76,6 +79,9 @@ jobs:
             echo "Using R2 preview bucket: $preview_bucket"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Ensure R2 buckets exist
+        env:
+          MEDIA_BUCKET: ${{ steps.names.outputs.media_bucket }}
+          PREVIEW_BUCKET: ${{ steps.names.outputs.preview_bucket }}
         run: |
           set +e
           FAILED=0
@@ -92,8 +98,8 @@ jobs:
               return $?
             fi
           }
-          ensure_bucket "$CF_R2_MEDIA_BUCKET" || FAILED=1
-          ensure_bucket "$CF_R2_MEDIA_PREVIEW_BUCKET" || FAILED=1
+          ensure_bucket "$MEDIA_BUCKET" || FAILED=1
+          ensure_bucket "$PREVIEW_BUCKET" || FAILED=1
           if [ "$FAILED" -ne 0 ]; then
             echo "CF_R2_MEDIA_BUCKET=" >> "$GITHUB_ENV"
             echo "CF_R2_MEDIA_PREVIEW_BUCKET=" >> "$GITHUB_ENV"
@@ -115,6 +121,12 @@ jobs:
           fi
           echo "CF_D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
       - name: Update Wrangler config and tracked resource manifest
+        env:
+          CF_WORKER_NAME: ${{ env.CF_WORKER_NAME }}
+          CF_D1_DATABASE_NAME: ${{ env.CF_D1_DATABASE_NAME }}
+          CF_D1_DATABASE_ID: ${{ env.CF_D1_DATABASE_ID }}
+          CF_R2_MEDIA_BUCKET: ${{ steps.names.outputs.media_bucket }}
+          CF_R2_MEDIA_PREVIEW_BUCKET: ${{ steps.names.outputs.preview_bucket }}
         run: python3 tools/update_cloudflare_config.py
       - name: Apply D1 schema
         run: npx wrangler d1 execute "$CF_D1_DATABASE_NAME" --remote --file db/migrations/0001_initial.sql
