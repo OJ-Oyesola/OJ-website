@@ -116,8 +116,8 @@ jobs:
           echo "CF_D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
       - name: Update Wrangler config and tracked resource manifest
         run: python3 tools/update_cloudflare_config.py
-      - name: Apply D1 migrations
-        run: npx wrangler d1 migrations apply "$CF_D1_DATABASE_NAME" --remote --yes
+      - name: Apply D1 schema
+        run: npx wrangler d1 execute "$CF_D1_DATABASE_NAME" --remote --file db/migrations/0001_initial.sql
       - name: Deploy Worker
         run: npx wrangler deploy
       - name: Commit generated Cloudflare config
