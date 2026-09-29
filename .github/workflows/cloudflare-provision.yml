@@ -77,7 +77,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Ensure R2 buckets exist
         run: |
-          set -euo pipefail
+          set +e
+          FAILED=0
           ensure_bucket() {
             local name="$1"
             local output
@@ -88,10 +89,19 @@ jobs:
               echo "$output"
               echo "Creating R2 bucket: $name"
               npx wrangler r2 bucket create "$name" --location "$R2_LOCATION"
+              return $?
             fi
           }
-          ensure_bucket "$CF_R2_MEDIA_BUCKET"
-          ensure_bucket "$CF_R2_MEDIA_PREVIEW_BUCKET"
+          ensure_bucket "$CF_R2_MEDIA_BUCKET" || FAILED=1
+          ensure_bucket "$CF_R2_MEDIA_PREVIEW_BUCKET" || FAILED=1
+          if [ "$FAILED" -ne 0 ]; then
+            echo "CF_R2_MEDIA_BUCKET=" >> "$GITHUB_ENV"
+            echo "CF_R2_MEDIA_PREVIEW_BUCKET=" >> "$GITHUB_ENV"
+            echo "R2 provisioning failed in this run; continuing with D1 + Worker deployment only." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "R2 provisioning succeeded." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
       - name: Ensure D1 database exists
         run: |
           set -euo pipefail
