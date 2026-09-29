@@ -118,8 +118,6 @@ jobs:
         run: python3 tools/update_cloudflare_config.py
       - name: Apply D1 schema
         run: npx wrangler d1 execute "$CF_D1_DATABASE_NAME" --remote --file db/migrations/0001_initial.sql
-      - name: Deploy Worker
-        run: npx wrangler deploy
       - name: Commit generated Cloudflare config
         run: |
           set -euo pipefail
@@ -132,12 +130,21 @@ jobs:
             git commit -m "Provision Cloudflare resources [skip ci]"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi
+      - name: Deploy Worker
+        run: |
+          set +e
+          npx wrangler deploy
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "Worker deployment failed in this run; resources and schema were still provisioned." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
       - name: Summarize
         run: |
           {
             echo "## Cloudflare resources"
             echo "- Worker: $CF_WORKER_NAME"
             echo "- D1 database: $CF_D1_DATABASE_NAME ($CF_D1_DATABASE_ID)"
-            echo "- R2 bucket: $CF_R2_MEDIA_BUCKET"
-            echo "- R2 preview bucket: $CF_R2_MEDIA_PREVIEW_BUCKET"
+            echo "- R2 bucket: ${CF_R2_MEDIA_BUCKET:-not bound}"
+            echo "- R2 preview bucket: ${CF_R2_MEDIA_PREVIEW_BUCKET:-not bound}"
           } >> "$GITHUB_STEP_SUMMARY"
