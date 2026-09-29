@@ -8,6 +8,9 @@
                  fall back to opening a pre-filled email.
    whatsapp    : international format, digits only.
    instagram   : handle WITHOUT the @ (leave "" to hide the links).
+   clientApiBase : optional absolute base URL for the Cloudflare Worker client
+                 gallery API, for example https://oj-website-api.<subdomain>.workers.dev
+                 Leave blank to keep the static GitHub Pages gallery flow.
    ========================================================================== */
 window.OJ_CONFIG = {
   formspreeId: "xnpqbjky",
@@ -15,6 +18,7 @@ window.OJ_CONFIG = {
   phoneDisplay: "+234 706 584 8333",
   whatsapp: "2347065848333",
   instagram: "oj_oyesola",
+  clientApiBase: "",
   salt: "f90fab92741ea744b18d7471c6ad555e"
 };
 

@@ -12,7 +12,15 @@
   function slugTitle() {
     return ((state.data && state.data.title) || "photos").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() || "photos";
   }
+  function clientApiBase() {
+    return String(CFG.clientApiBase || "").trim().replace(/\/+$/, "");
+  }
+  function isAbsoluteUrl(path) {
+    return /^https?:\/\//i.test(path);
+  }
   function photoUrl(path) {
+    if (!path) return "";
+    if (isAbsoluteUrl(path)) return path;
     return state.base + "/" + path.split("/").map(encodeURIComponent).join("/");
   }
   function photoName(i) { return slugTitle() + "-" + String(i + 1).padStart(3, "0") + ".jpg"; }
@@ -44,13 +52,43 @@
     if (!Array.isArray(data.photos)) throw new Error("Invalid photos");
     data.photos.forEach(function (photo) {
       [photo && photo.full, photo && photo.grid].forEach(function (path) {
-        if (typeof path !== "string" || path.includes("\\") ||
-            path.split("/").some(function (part) { return !part || part === "." || part === ".."; })) {
+        if (typeof path !== "string" || path.includes("\\")) throw new Error("Invalid photo path");
+        if (isAbsoluteUrl(path)) {
+          var url = new URL(path);
+          if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("Invalid photo URL");
+          return;
+        }
+        if (path.split("/").some(function (part) { return !part || part === "." || part === ".."; })) {
           throw new Error("Invalid photo path");
         }
       });
     });
     return data;
+  }
+
+  async function loadGalleryFromApi(hash, signal) {
+    var base = clientApiBase();
+    if (!base) return null;
+    var response = await fetch(base + "/api/client/access", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ lookupHash: hash }),
+      cache: "no-store",
+      signal: signal
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Gallery request failed");
+    var payload = await response.json();
+    if (!payload || !payload.gallery) throw new Error("Invalid gallery response");
+    return { data: validateGallery(payload.gallery), base: "" };
+  }
+
+  async function loadGalleryFromStatic(hash, signal) {
+    var base = "galleries/" + hash;
+    var response = await fetch(base + "/data.json", { cache: "no-store", signal: signal });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Gallery request failed");
+    return { data: validateGallery(await response.json()), base: base };
   }
 
   /* ---------- Login and gallery rendering ---------- */
@@ -79,13 +117,17 @@
       var controller = new AbortController();
       var timeout = setTimeout(function () { controller.abort(); }, 15000);
       try {
-        var base = "galleries/" + await galleryHash(email.value, code.value);
-        var response = await fetch(base + "/data.json", { cache: "no-store", signal: controller.signal });
-        notFound = response.status === 404;
-        if (!response.ok) throw new Error("Gallery request failed");
-        var data = validateGallery(await response.json());
-        state.data = data;
-        state.base = base;
+        var hash = await galleryHash(email.value, code.value);
+        var loaded = null;
+        if (clientApiBase()) {
+          try { loaded = await loadGalleryFromApi(hash, controller.signal); }
+          catch (apiErr) { loaded = null; }
+        }
+        if (!loaded) loaded = await loadGalleryFromStatic(hash, controller.signal);
+        notFound = !loaded;
+        if (!loaded) throw new Error("Gallery request failed");
+        state.data = loaded.data;
+        state.base = loaded.base;
         openGallery();
       } catch (err) {
         $("#loginErrorMsg").textContent = notFound

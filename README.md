@@ -107,6 +107,7 @@ Current Worker route scaffold:
 - `GET /health`
 - `GET /api/public/galleries`
 - `GET /api/public/galleries/:slug`
+- `POST /api/client/access` — resolves a client gallery by its existing lookup hash
 - `GET /media/:objectKey`
 - `GET /api/admin/galleries`
 - `POST /api/admin/galleries`
@@ -114,7 +115,10 @@ Current Worker route scaffold:
 - `POST /api/admin/galleries/:slug/uploads`
 
 The public routes are read-only. Admin routes require the `ADMIN_API_TOKEN`
-Worker secret.
+Worker secret. When `clientApiBase` is configured in `assets/js/config.js`, the
+client portal now tries the Worker-backed `POST /api/client/access` flow first
+and falls back to the static `galleries/<hash>/data.json` flow if no API gallery
+match is found.
 
 ## Configuration — `assets/js/config.js`
 
@@ -123,6 +127,7 @@ Worker secret.
 | `formspreeId` | Formspree endpoint ID for booking and contract submissions. Currently `xnpqbjky`. When blank, forms open a prefilled email draft. |
 | `email` / `phoneDisplay` / `whatsapp` | Contact links and labelled contact values. WhatsApp uses international digits only. |
 | `instagram` | Handle without `@`; leave blank to hide Instagram links. |
+| `clientApiBase` | Optional absolute Cloudflare Worker base URL for backend-served client galleries. Leave blank to keep the current static gallery lookup flow. |
 | `salt` | **Public lookup namespace, not a secret.** The gallery builder reads this directly from config; keep it double-quoted. Changing it invalidates existing gallery logins unless those galleries are regenerated. |
 
 Only a successful Formspree response displays a delivery confirmation and

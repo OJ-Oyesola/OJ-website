@@ -38,8 +38,16 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function mediaUrl(request, objectKey) {
-  return new URL("/media/" + objectKey.split("/").map(encodeURIComponent).join("/"), request.url).toString();
+function mediaUrl(request, objectKey, accessHash = "") {
+  const url = new URL("/media/" + objectKey.split("/").map(encodeURIComponent).join("/"), request.url);
+  if (accessHash) url.searchParams.set("h", accessHash);
+  return url.toString();
+}
+
+function isExpired(expiresAt) {
+  if (!expiresAt) return false;
+  const value = new Date(`${expiresAt}T23:59:59.999Z`).getTime();
+  return Number.isFinite(value) && Date.now() > value;
 }
 
 function requireDb(env) {
@@ -66,6 +74,56 @@ async function getGalleryBySlug(env, slug) {
        FROM galleries WHERE slug = ?1`
   ).bind(slug).first();
   return row || null;
+}
+
+async function getClientGalleryByHash(request, env, accessHash) {
+  requireDb(env);
+  const normalizedHash = String(accessHash || "").trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(normalizedHash)) throw new HttpError(400, "A valid gallery hash is required.");
+  const gallery = await env.DB.prepare(
+    `SELECT id, kind, slug, title, subtitle, category, description, visibility,
+            sort_order AS sortOrder, client_email AS clientEmail, access_code_hash AS accessCodeHash,
+            external_url AS externalUrl, cover_object_key AS coverObjectKey, expires_at AS expiresAt,
+            created_at AS createdAt, updated_at AS updatedAt
+       FROM galleries
+      WHERE kind = 'client' AND access_code_hash = ?1 AND visibility IN ('private', 'public')`
+  ).bind(normalizedHash).first();
+  if (!gallery) throw new HttpError(404, "Gallery not found.");
+  const { results } = await env.DB.prepare(
+    `SELECT id, object_key AS objectKey, variant, title, alt_text AS altText, mime_type AS mimeType,
+            bytes, width, height, position, is_public AS isPublic, created_at AS createdAt
+       FROM media_objects
+      WHERE gallery_id = ?1
+      ORDER BY position ASC, created_at ASC`
+  ).bind(gallery.id).all();
+  return json({
+    ok: true,
+    gallery: {
+      kind: gallery.kind,
+      slug: gallery.slug,
+      title: gallery.title,
+      subtitle: gallery.subtitle,
+      date: "",
+      expires: gallery.expiresAt || "",
+      expired: isExpired(gallery.expiresAt),
+      externalUrl: gallery.externalUrl || "",
+      photos: (results || []).map((photo) => {
+        const assetUrl = mediaUrl(request, photo.objectKey, normalizedHash);
+        return {
+          id: photo.id,
+          full: assetUrl,
+          grid: assetUrl,
+          caption: photo.title || photo.altText || "",
+          w: Number(photo.width || 0),
+          h: Number(photo.height || 0),
+          bytes: Number(photo.bytes || 0),
+          mimeType: photo.mimeType,
+          variant: photo.variant,
+          isPublic: Boolean(photo.isPublic)
+        };
+      })
+    }
+  });
 }
 
 async function listPublicGalleries(request, env) {
@@ -291,19 +349,29 @@ async function serveMedia(request, env, objectKey) {
   requireMedia(env);
   const normalized = objectKey.split("/").filter(Boolean).join("/");
   if (!normalized || normalized.includes("..")) throw new HttpError(400, "Invalid object key.");
+  const accessHash = new URL(request.url).searchParams.get("h") || "";
   const allowed = await env.DB.prepare(
     `SELECT m.object_key AS objectKey, m.mime_type AS mimeType
        FROM media_objects m
        INNER JOIN galleries g ON g.id = m.gallery_id
-      WHERE m.object_key = ?1 AND m.is_public = 1 AND g.visibility = 'public'`
-  ).bind(normalized).first();
+      WHERE m.object_key = ?1
+        AND (
+          (m.is_public = 1 AND g.visibility = 'public')
+          OR (
+            g.kind = 'client'
+            AND g.visibility IN ('private', 'public')
+            AND g.access_code_hash != ''
+            AND g.access_code_hash = ?2
+          )
+        )`
+  ).bind(normalized, accessHash.trim().toLowerCase()).first();
   if (!allowed) throw new HttpError(404, "File not found.");
   const object = await env.MEDIA.get(normalized);
   if (!object) throw new HttpError(404, "File not found.");
   const headers = new Headers();
   Object.entries(corsHeaders()).forEach(([key, value]) => headers.set(key, value));
   headers.set("content-type", object.httpMetadata?.contentType || allowed.mimeType || "application/octet-stream");
-  headers.set("cache-control", "public, max-age=3600");
+  headers.set("cache-control", accessHash ? "private, max-age=300" : "public, max-age=3600");
   headers.set("etag", object.httpEtag || object.etag || "");
   return new Response(object.body, { headers });
 }
@@ -330,6 +398,10 @@ export default {
       if (request.method === "GET" && url.pathname.startsWith("/api/public/galleries/")) {
         const slug = decodeURIComponent(url.pathname.slice("/api/public/galleries/".length));
         return await getPublicGallery(request, env, slug);
+      }
+      if (request.method === "POST" && url.pathname === "/api/client/access") {
+        const body = await request.json();
+        return await getClientGalleryByHash(request, env, body && body.lookupHash);
       }
       if (request.method === "GET" && url.pathname === "/api/admin/galleries") {
         return await listAdminGalleries(request, env);

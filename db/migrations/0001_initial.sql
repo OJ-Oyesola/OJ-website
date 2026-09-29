@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS galleries (
 CREATE INDEX IF NOT EXISTS galleries_kind_visibility_sort_idx
   ON galleries (kind, visibility, sort_order, created_at DESC);
 
+CREATE INDEX IF NOT EXISTS galleries_client_lookup_idx
+  ON galleries (kind, access_code_hash, visibility);
+
 CREATE TABLE IF NOT EXISTS media_objects (
   id TEXT PRIMARY KEY,
   gallery_id TEXT NOT NULL,
