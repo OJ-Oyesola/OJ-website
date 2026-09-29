@@ -15,8 +15,8 @@ API_VERSION = "2026-09-29"
 # bucket_name = "oj-website-media"
 # preview_bucket_name = "oj-website-media-preview"
 
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "oj-website"
-# database_id = "replace-with-your-d1-database-id"
-# migrations_dir = "db/migrations"
+[[d1_databases]]
+binding = "DB"
+database_name = "oj-website"
+database_id = "15db100b-8dc4-4723-ba69-368ac602ad44"
+migrations_dir = "db/migrations"

@@ -9,8 +9,8 @@
   },
   "d1": {
     "binding": "DB",
-    "database_name": null,
-    "database_id": null,
+    "database_name": "oj-website",
+    "database_id": "15db100b-8dc4-4723-ba69-368ac602ad44",
     "migrations_dir": "db/migrations"
   }
 }
