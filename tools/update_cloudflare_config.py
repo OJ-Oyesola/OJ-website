@@ -41,7 +41,7 @@ lines = [
     'main = "workers/api/index.js"',
     'compatibility_date = "2026-09-29"',
     'workers_dev = true',
-    'minify = true',
+    'minify = false',
     '',
     '[observability.logs]',
     'enabled = true',
