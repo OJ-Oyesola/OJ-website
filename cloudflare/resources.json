@@ -1,7 +1,7 @@
 {
   "worker": {
     "name": "oj-website-api",
-    "url": "https://oj-website-api.ojoyesola.workers.dev"
+    "url": null
   },
   "r2": {
     "binding": "MEDIA",
