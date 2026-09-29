@@ -7,14 +7,16 @@ minify = true
 [observability.logs]
 enabled = true
 
-# Uncomment and replace these when you are ready to bind Cloudflare storage.
-#
+[vars]
+API_VERSION = "2026-09-29"
+
 # [[r2_buckets]]
 # binding = "MEDIA"
 # bucket_name = "oj-website-media"
 # preview_bucket_name = "oj-website-media-preview"
-#
+
 # [[d1_databases]]
 # binding = "DB"
 # database_name = "oj-website"
 # database_id = "replace-with-your-d1-database-id"
+# migrations_dir = "db/migrations"

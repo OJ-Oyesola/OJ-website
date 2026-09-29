@@ -1,0 +1,16 @@
+{
+  "worker": {
+    "name": "oj-website-api"
+  },
+  "r2": {
+    "binding": "MEDIA",
+    "bucket": null,
+    "preview_bucket": null
+  },
+  "d1": {
+    "binding": "DB",
+    "database_name": null,
+    "database_id": null,
+    "migrations_dir": "db/migrations"
+  }
+}

@@ -1,0 +1,108 @@
+name: Cloudflare provision resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      database_name:
+        description: D1 database name
+        required: true
+        default: oj-website
+      media_bucket_name:
+        description: Primary R2 bucket name
+        required: true
+        default: oj-website-media
+      preview_bucket_name:
+        description: Preview R2 bucket name
+        required: true
+        default: oj-website-media-preview
+      d1_location:
+        description: D1 primary location hint
+        required: true
+        default: enam
+      r2_location:
+        description: R2 location hint
+        required: true
+        default: enam
+
+permissions:
+  contents: write
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_WORKER_NAME: oj-website-api
+      CF_D1_DATABASE_NAME: ${{ inputs.database_name }}
+      CF_R2_MEDIA_BUCKET: ${{ inputs.media_bucket_name }}
+      CF_R2_MEDIA_PREVIEW_BUCKET: ${{ inputs.preview_bucket_name }}
+      D1_LOCATION: ${{ inputs.d1_location }}
+      R2_LOCATION: ${{ inputs.r2_location }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - name: Verify required Cloudflare secrets exist
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Ensure R2 buckets exist
+        run: |
+          set -euo pipefail
+          ensure_bucket() {
+            local name="$1"
+            if npx wrangler r2 bucket info "$name" >/dev/null 2>&1; then
+              echo "R2 bucket already exists: $name"
+            else
+              npx wrangler r2 bucket create "$name" --location "$R2_LOCATION"
+            fi
+          }
+          ensure_bucket "$CF_R2_MEDIA_BUCKET"
+          ensure_bucket "$CF_R2_MEDIA_PREVIEW_BUCKET"
+      - name: Ensure D1 database exists
+        run: |
+          set -euo pipefail
+          DB_ID=$(npx wrangler d1 list --json | node -e 'const fs = require("fs"); const list = JSON.parse(fs.readFileSync(0, "utf8")); const name = process.env.CF_D1_DATABASE_NAME; const db = list.find((entry) => entry.name === name); if (db) process.stdout.write(db.uuid || db.id || "");')
+          if [ -z "$DB_ID" ]; then
+            CREATE_OUTPUT=$(npx wrangler d1 create "$CF_D1_DATABASE_NAME" --location "$D1_LOCATION")
+            echo "$CREATE_OUTPUT"
+            DB_ID=$(printf '%s' "$CREATE_OUTPUT" | node -e 'const fs = require("fs"); const out = fs.readFileSync(0, "utf8"); const match = out.match(/database_id\s*=\s*"([^"]+)"/); if (!match) process.exit(1); process.stdout.write(match[1]);')
+          else
+            echo "D1 database already exists: $CF_D1_DATABASE_NAME ($DB_ID)"
+          fi
+          echo "CF_D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
+      - name: Update Wrangler config and tracked resource manifest
+        run: python3 tools/update_cloudflare_config.py
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply DB --remote --yes
+      - name: Deploy Worker
+        run: npx wrangler deploy
+      - name: Commit generated Cloudflare config
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add wrangler.toml cloudflare/resources.json
+          if git diff --cached --quiet; then
+            echo "No tracked Cloudflare config changes to commit."
+          else
+            git commit -m "Provision Cloudflare resources [skip ci]"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+      - name: Summarize
+        run: |
+          {
+            echo "## Cloudflare resources"
+            echo "- Worker: $CF_WORKER_NAME"
+            echo "- D1 database: $CF_D1_DATABASE_NAME ($CF_D1_DATABASE_ID)"
+            echo "- R2 bucket: $CF_R2_MEDIA_BUCKET"
+            echo "- R2 preview bucket: $CF_R2_MEDIA_PREVIEW_BUCKET"
+          } >> "$GITHUB_STEP_SUMMARY"

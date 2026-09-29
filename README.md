@@ -218,8 +218,10 @@ a commercial web-embedding licence before using it commercially.
 ├── assets/css/                    # shared design + client styles
 ├── assets/js/                     # config, forms, main, client, contract, generated galleries
 ├── assets/fonts/ · assets/img/    # static brand assets
-├── workers/api/                   # starter Cloudflare Worker backend scaffold
-├── wrangler.toml                  # Cloudflare Worker config + future R2/D1 bindings
+├── cloudflare/resources.json      # tracked Cloudflare resource manifest
+├── db/migrations/                 # D1 schema migrations
+├── workers/api/                   # Cloudflare Worker backend scaffold + API
+├── wrangler.toml                  # Cloudflare Worker config + R2/D1 bindings
 ├── <shoot folders>/               # original portfolio photographs
 ├── galleries/<sha256>/            # client data + full/grid/thumbs images
 ├── tools/                         # gallery generators, legal-shell sync, offline site checks
