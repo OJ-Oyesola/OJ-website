@@ -78,6 +78,44 @@ and enable **Enforce HTTPS**. Update:
 `robots.txt` is only honoured at an origin's root; a project-site copy is not an
 access-control mechanism. Pages marked `noindex` are excluded from the sitemap.
 
+## Cloudflare backend
+
+The repository also includes a Cloudflare Worker backend scaffold for moving
+client-gallery storage away from the static GitHub Pages model.
+
+Key files:
+
+- `wrangler.toml` — Worker config and Cloudflare bindings.
+- `workers/api/index.js` — Worker API routes.
+- `db/migrations/0001_initial.sql` — D1 schema.
+- `cloudflare/resources.json` — tracked manifest of provisioned resource names/IDs.
+- `.github/workflows/cloudflare-check.yml` — validates Cloudflare auth and a deploy dry-run in GitHub Actions.
+- `.github/workflows/cloudflare-provision.yml` — creates or reuses R2/D1 resources, updates tracked config, applies schema, and deploys the Worker.
+
+Required GitHub Actions secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Optional GitHub Actions secret:
+
+- `CLOUDFLARE_WORKER_ADMIN_TOKEN` — when present, the provision workflow syncs it
+  into the Worker as the `ADMIN_API_TOKEN` secret for protected admin routes.
+
+Current Worker route scaffold:
+
+- `GET /health`
+- `GET /api/public/galleries`
+- `GET /api/public/galleries/:slug`
+- `GET /media/:objectKey`
+- `GET /api/admin/galleries`
+- `POST /api/admin/galleries`
+- `PATCH /api/admin/galleries/:slug`
+- `POST /api/admin/galleries/:slug/uploads`
+
+The public routes are read-only. Admin routes require the `ADMIN_API_TOKEN`
+Worker secret.
+
 ## Configuration — `assets/js/config.js`
 
 | Key | Purpose |
