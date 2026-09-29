@@ -4,8 +4,8 @@
   },
   "r2": {
     "binding": "MEDIA",
-    "bucket": null,
-    "preview_bucket": null
+    "bucket": "oj-website-media-3039fcee5",
+    "preview_bucket": "oj-website-media-preview-3039fcee5"
   },
   "d1": {
     "binding": "DB",
