@@ -29,12 +29,44 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_WORKER_ADMIN_TOKEN"
           node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); if (!data.worker || !data.worker.url) { console.error("cloudflare/resources.json is missing worker.url"); process.exit(1); } console.log(`Using Worker URL: ${data.worker.url}`);'
-      - name: Import demo galleries into Worker backend
+      - name: Verify Worker admin API access
         env:
           ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
         run: |
           export ADMIN_API_BASE=$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); process.stdout.write(data.worker.url);')
-          npm run import:demo-galleries -- --visibility private
+          node - <<'EOF'
+          (async () => {
+            const base = process.env.ADMIN_API_BASE;
+            const token = process.env.ADMIN_API_TOKEN;
+            const health = await fetch(base + '/health');
+            const healthText = await health.text();
+            console.log('Health:', health.status, healthText);
+            const admin = await fetch(base + '/api/admin/galleries', {
+              headers: { authorization: `Bearer ${token}` }
+            });
+            const adminText = await admin.text();
+            console.log('Admin galleries:', admin.status, adminText);
+            if (!admin.ok) throw new Error(`Worker admin API preflight failed with ${admin.status}`);
+          })().catch((error) => {
+            console.error(error && error.message ? error.message : error);
+            process.exit(1);
+          });
+          EOF
+      - name: Import demo galleries into Worker backend
+        id: import
+        continue-on-error: true
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
+        run: |
+          export ADMIN_API_BASE=$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); process.stdout.write(data.worker.url);')
+          npm run import:demo-galleries -- --visibility private 2>&1 | tee import.log
+          exit ${PIPESTATUS[0]}
+      - name: Fail if demo import failed
+        if: ${{ steps.import.outcome != 'success' }}
+        run: |
+          tail -n 40 import.log
+          echo "::error::Demo gallery import failed. See log tail above."
+          exit 1
       - name: Summarize backend client galleries
         env:
           ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
