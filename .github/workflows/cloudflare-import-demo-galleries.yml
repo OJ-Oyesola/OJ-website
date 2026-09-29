@@ -1,0 +1,68 @@
+name: Cloudflare import demo galleries
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena/01a07d0a-oj-website]
+    paths:
+      - .github/workflows/cloudflare-import-demo-galleries.yml
+      - tools/import_client_galleries.js
+      - package.json
+
+permissions:
+  contents: read
+
+jobs:
+  import-demo-galleries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_WORKER_ADMIN_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify backend import prerequisites
+        run: |
+          test -n "$CLOUDFLARE_WORKER_ADMIN_TOKEN"
+          node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); if (!data.worker || !data.worker.url) { console.error("cloudflare/resources.json is missing worker.url"); process.exit(1); } console.log(`Using Worker URL: ${data.worker.url}`);'
+      - name: Import demo galleries into Worker backend
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
+        run: |
+          export ADMIN_API_BASE=$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); process.stdout.write(data.worker.url);')
+          npm run import:demo-galleries -- --visibility private
+      - name: Summarize backend client galleries
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
+        run: |
+          export ADMIN_API_BASE=$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); process.stdout.write(data.worker.url);')
+          node - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          (async () => {
+            const base = process.env.ADMIN_API_BASE;
+            const token = process.env.ADMIN_API_TOKEN;
+            const response = await fetch(base + '/api/admin/galleries', {
+              headers: { authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) {
+              const text = await response.text();
+              throw new Error(`Failed to list galleries: ${response.status} ${text}`);
+            }
+            const payload = await response.json();
+            const galleries = (payload.galleries || []).filter((gallery) => gallery.kind === 'client');
+            console.log('## Backend client galleries');
+            if (!galleries.length) {
+              console.log('- No client galleries found.');
+            } else {
+              for (const gallery of galleries) {
+                console.log(`- ${gallery.title} (${gallery.slug}) — ${gallery.photoCount} records`);
+              }
+            }
+          })().catch((error) => {
+            console.error(error && error.message ? error.message : error);
+            process.exit(1);
+          });
+          EOF
