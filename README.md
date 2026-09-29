@@ -138,6 +138,12 @@ npm run import:client-galleries -- \
   --admin-token "$ADMIN_API_TOKEN"
 ```
 
+Or, for just the two bundled demo galleries:
+
+```bash
+npm run import:demo-galleries -- --admin-token "$ADMIN_API_TOKEN"
+```
+
 Notes:
 
 - With no paths passed, the importer scans all `galleries/<64-hex>/` folders.

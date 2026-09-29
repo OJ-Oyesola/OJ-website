@@ -4,20 +4,31 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
+const DEMO_GALLERY_HASHES = [
+  "e5edec8a25350838873d0e638ce864b060c185a80fcd86265789500f527559d5",
+  "c140eca7fd6f7d51802def97df3bd1cdc0528f94c6d193ff62a9440f09cb7da9"
+];
+
 function usage() {
   console.log(`Usage:
   node tools/import_client_galleries.js --api-base https://your-worker.workers.dev [options] [gallery-dir ...]
 
 Options:
   --admin-token <token>   Worker admin token. Defaults to ADMIN_API_TOKEN env.
-  --api-base <url>        Cloudflare Worker base URL.
+  --api-base <url>        Cloudflare Worker base URL. Defaults to ADMIN_API_BASE env,
+                          then cloudflare/resources.json worker.url when available.
   --visibility <value>    Gallery visibility: private or public. Default: private.
+  --demo-only             Import only the two bundled demo galleries.
   --dry-run               Print intended actions without sending API requests.
   --help                  Show this help.
 
 Examples:
   node tools/import_client_galleries.js \
     --api-base https://oj-website-api.example.workers.dev \
+    --admin-token "$ADMIN_API_TOKEN"
+
+  node tools/import_client_galleries.js \
+    --demo-only \
     --admin-token "$ADMIN_API_TOKEN"
 
   node tools/import_client_galleries.js \
@@ -28,9 +39,10 @@ Examples:
 
 function parseArgs(argv) {
   const options = {
-    apiBase: "",
+    apiBase: process.env.ADMIN_API_BASE || "",
     adminToken: process.env.ADMIN_API_TOKEN || "",
     visibility: "private",
+    demoOnly: false,
     dryRun: false,
     galleryDirs: []
   };
@@ -40,6 +52,8 @@ function parseArgs(argv) {
       options.help = true;
     } else if (arg === "--dry-run") {
       options.dryRun = true;
+    } else if (arg === "--demo-only") {
+      options.demoOnly = true;
     } else if (arg === "--api-base") {
       options.apiBase = argv[++index] || "";
     } else if (arg === "--admin-token") {
@@ -80,9 +94,10 @@ function guessMime(filePath) {
   return "application/octet-stream";
 }
 
-async function getGalleryDirectories(inputDirs) {
+async function getGalleryDirectories(inputDirs, demoOnly) {
   if (inputDirs.length) return inputDirs;
   const root = path.join(process.cwd(), "galleries");
+  if (demoOnly) return DEMO_GALLERY_HASHES.map((hash) => path.join(root, hash));
   const entries = await fs.readdir(root, { withFileTypes: true });
   const dirs = [];
   for (const entry of entries) {
@@ -96,6 +111,18 @@ async function getGalleryDirectories(inputDirs) {
     }
   }
   return dirs.sort();
+}
+
+async function resolveApiBase(explicitBase) {
+  const normalized = normalizeBase(explicitBase);
+  if (normalized) return normalized;
+  try {
+    const manifestPath = path.join(process.cwd(), "cloudflare", "resources.json");
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+    return normalizeBase(manifest && manifest.worker && (manifest.worker.url || manifest.worker.workers_dev_url) || "");
+  } catch {
+    return "";
+  }
 }
 
 async function readJson(filePath) {
@@ -153,12 +180,12 @@ async function main() {
     usage();
     return;
   }
-  options.apiBase = normalizeBase(options.apiBase);
-  if (!options.apiBase) throw new Error("--api-base is required.");
+  options.apiBase = await resolveApiBase(options.apiBase);
+  if (!options.apiBase) throw new Error("Provide --api-base, set ADMIN_API_BASE, or persist cloudflare/resources.json worker.url first.");
   if (!options.dryRun && !options.adminToken) throw new Error("Provide --admin-token or set ADMIN_API_TOKEN.");
   if (!["private", "public"].includes(options.visibility)) throw new Error("--visibility must be private or public.");
 
-  const galleryDirs = await getGalleryDirectories(options.galleryDirs);
+  const galleryDirs = await getGalleryDirectories(options.galleryDirs, options.demoOnly);
   if (!galleryDirs.length) {
     console.log("No gallery directories found to import.");
     return;
