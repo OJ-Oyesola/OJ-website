@@ -97,10 +97,14 @@ Required GitHub Actions secrets:
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-Optional GitHub Actions secret:
+Optional GitHub Actions secrets:
 
 - `CLOUDFLARE_WORKER_ADMIN_TOKEN` — when present, the provision workflow syncs it
   into the Worker as the `ADMIN_API_TOKEN` secret for protected admin routes.
+- `CLOUDFLARE_WORKERS_SUBDOMAIN` — lets the provision workflow create the
+  account-level Workers subdomain when one does not exist yet, so the exact
+  public `https://<worker>.<subdomain>.workers.dev` URL can be persisted into
+  `cloudflare/resources.json` automatically.
 
 Current Worker route scaffold:
 
