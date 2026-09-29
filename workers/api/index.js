@@ -410,19 +410,18 @@ async function serveMedia(request, env, objectKey) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
+      const headers = new Headers({ "content-type": "application/json; charset=utf-8" });
+      Object.entries(corsHeaders()).forEach(([key, value]) => headers.set(key, value));
+      return new Response(JSON.stringify({
+        ok: true,
+        service: "oj-website-api",
+        version: env.API_VERSION || "2026-09-29",
+        timestamp: nowIso()
+      }, null, 2), { status: 200, headers });
+    }
     try {
       if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders() });
-      if (url.pathname === "/" || url.pathname === "/health") {
-        return json({
-          ok: true,
-          service: "oj-website-api",
-          version: env.API_VERSION || "2026-09-29",
-          r2Bound: Boolean(env.MEDIA),
-          d1Bound: Boolean(env.DB),
-          adminConfigured: Boolean(env.ADMIN_API_TOKEN),
-          timestamp: nowIso()
-        });
-      }
       if (request.method === "GET" && url.pathname === "/api/public/galleries") {
         return await listPublicGalleries(request, env);
       }
