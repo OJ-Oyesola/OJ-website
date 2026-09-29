@@ -10,7 +10,8 @@
    instagram   : handle WITHOUT the @ (leave "" to hide the links).
    clientApiBase : optional absolute base URL for the Cloudflare Worker client
                  gallery API, for example https://oj-website-api.<subdomain>.workers.dev
-                 Leave blank to keep the static GitHub Pages gallery flow.
+                 Leave blank to auto-discover the deployed Worker URL from
+                 cloudflare/resources.json, then fall back to static galleries.
    ========================================================================== */
 window.OJ_CONFIG = {
   formspreeId: "xnpqbjky",

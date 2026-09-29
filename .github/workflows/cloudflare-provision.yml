@@ -152,19 +152,55 @@ jobs:
             git push origin HEAD:${GITHUB_REF_NAME}
           fi
       - name: Deploy Worker
+        id: deploy
         run: |
           set +e
-          npx wrangler deploy
-          status=$?
+          deploy_log=$(mktemp)
+          npx wrangler deploy 2>&1 | tee "$deploy_log"
+          status=${PIPESTATUS[0]}
+          worker_url=$(node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const matches = [...text.matchAll(/https?:\/\/[A-Za-z0-9.-]+\.workers\.dev\b/g)].map((match) => match[0]); if (matches.length) process.stdout.write(matches[matches.length - 1]);' "$deploy_log")
+          if [ -n "$worker_url" ]; then
+            echo "worker_url=$worker_url" >> "$GITHUB_OUTPUT"
+            echo "CF_WORKER_URL=$worker_url" >> "$GITHUB_ENV"
+            echo "Worker URL: $worker_url" >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "$status" -ne 0 ]; then
             echo "Worker deployment failed in this run; resources and schema were still provisioned." >> "$GITHUB_STEP_SUMMARY"
           fi
           exit 0
+      - name: Persist deployed Worker URL
+        if: ${{ steps.deploy.outputs.worker_url != '' }}
+        env:
+          CF_WORKER_NAME: ${{ env.CF_WORKER_NAME }}
+          CF_D1_DATABASE_NAME: ${{ env.CF_D1_DATABASE_NAME }}
+          CF_D1_DATABASE_ID: ${{ env.CF_D1_DATABASE_ID }}
+          CF_R2_MEDIA_BUCKET: ${{ steps.names.outputs.media_bucket }}
+          CF_R2_MEDIA_PREVIEW_BUCKET: ${{ steps.names.outputs.preview_bucket }}
+          CF_WORKER_URL: ${{ steps.deploy.outputs.worker_url }}
+        run: python3 tools/update_cloudflare_config.py
+      - name: Commit deployed Worker URL
+        if: ${{ steps.deploy.outputs.worker_url != '' }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloudflare/resources.json
+          if git diff --cached --quiet; then
+            echo "No deployed Worker URL changes to commit."
+          else
+            git commit -m "Persist deployed Worker URL [skip ci]"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
       - name: Summarize
+        env:
+          DEPLOYED_WORKER_URL: ${{ steps.deploy.outputs.worker_url }}
         run: |
           {
             echo "## Cloudflare resources"
             echo "- Worker: $CF_WORKER_NAME"
+            if [ -n "${DEPLOYED_WORKER_URL:-}" ]; then
+              echo "- Worker URL: $DEPLOYED_WORKER_URL"
+            fi
             echo "- D1 database: $CF_D1_DATABASE_NAME ($CF_D1_DATABASE_ID)"
             echo "- R2 bucket: ${CF_R2_MEDIA_BUCKET:-not bound}"
             echo "- R2 preview bucket: ${CF_R2_MEDIA_PREVIEW_BUCKET:-not bound}"

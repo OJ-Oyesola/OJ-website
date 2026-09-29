@@ -15,6 +15,21 @@ MEDIA_BUCKET = os.environ.get("CF_R2_MEDIA_BUCKET", "")
 MEDIA_PREVIEW_BUCKET = os.environ.get("CF_R2_MEDIA_PREVIEW_BUCKET", "")
 DB_NAME = os.environ.get("CF_D1_DATABASE_NAME", "")
 DB_ID = os.environ.get("CF_D1_DATABASE_ID", "")
+WORKER_URL = os.environ.get("CF_WORKER_URL", "")
+
+try:
+    existing_manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+except FileNotFoundError:
+    existing_manifest = {}
+except json.JSONDecodeError:
+    existing_manifest = {}
+
+if not WORKER_URL:
+    WORKER_URL = (
+        existing_manifest.get("worker", {}).get("url")
+        or existing_manifest.get("worker", {}).get("workers_dev_url")
+        or ""
+    )
 
 
 def quoted(value: str) -> str:
@@ -76,7 +91,10 @@ WRANGLER.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 MANIFEST.parent.mkdir(parents=True, exist_ok=True)
 MANIFEST.write_text(json.dumps({
-    'worker': {'name': WORKER_NAME},
+    'worker': {
+        'name': WORKER_NAME,
+        'url': WORKER_URL or None
+    },
     'r2': {
         'binding': 'MEDIA',
         'bucket': MEDIA_BUCKET or None,

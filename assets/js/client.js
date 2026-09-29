@@ -12,8 +12,23 @@
   function slugTitle() {
     return ((state.data && state.data.title) || "photos").replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").toLowerCase() || "photos";
   }
-  function clientApiBase() {
-    return String(CFG.clientApiBase || "").trim().replace(/\/+$/, "");
+  function normalizeApiBase(value) {
+    return String(value || "").trim().replace(/\/+$/, "");
+  }
+  function configuredClientApiBase() {
+    return normalizeApiBase(CFG.clientApiBase || "");
+  }
+  var clientApiBasePromise;
+  async function resolvedClientApiBase() {
+    var configured = configuredClientApiBase();
+    if (configured) return configured;
+    if (!clientApiBasePromise) clientApiBasePromise = fetch("cloudflare/resources.json", { cache: "no-store" })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (manifest) {
+        return normalizeApiBase(manifest && manifest.worker && (manifest.worker.url || manifest.worker.workers_dev_url) || "");
+      })
+      .catch(function () { return ""; });
+    return clientApiBasePromise;
   }
   function isAbsoluteUrl(path) {
     return /^https?:\/\//i.test(path);
@@ -66,8 +81,7 @@
     return data;
   }
 
-  async function loadGalleryFromApi(hash, signal) {
-    var base = clientApiBase();
+  async function loadGalleryFromApi(base, hash, signal) {
     if (!base) return null;
     var response = await fetch(base + "/api/client/access", {
       method: "POST",
@@ -119,11 +133,17 @@
       try {
         var hash = await galleryHash(email.value, code.value);
         var loaded = null;
-        if (clientApiBase()) {
-          try { loaded = await loadGalleryFromApi(hash, controller.signal); }
+        var apiBase = await resolvedClientApiBase();
+        var preferApi = !!configuredClientApiBase();
+        if (preferApi && apiBase) {
+          try { loaded = await loadGalleryFromApi(apiBase, hash, controller.signal); }
           catch (apiErr) { loaded = null; }
         }
         if (!loaded) loaded = await loadGalleryFromStatic(hash, controller.signal);
+        if (!loaded && !preferApi && apiBase) {
+          try { loaded = await loadGalleryFromApi(apiBase, hash, controller.signal); }
+          catch (apiErr) { loaded = null; }
+        }
         notFound = !loaded;
         if (!loaded) throw new Error("Gallery request failed");
         state.data = loaded.data;

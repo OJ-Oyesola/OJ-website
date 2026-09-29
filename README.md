@@ -88,7 +88,7 @@ Key files:
 - `wrangler.toml` — Worker config and Cloudflare bindings.
 - `workers/api/index.js` — Worker API routes.
 - `db/migrations/0001_initial.sql` — D1 schema.
-- `cloudflare/resources.json` — tracked manifest of provisioned resource names/IDs.
+- `cloudflare/resources.json` — tracked manifest of provisioned resource names/IDs and the deployed Worker URL.
 - `.github/workflows/cloudflare-check.yml` — validates Cloudflare auth and a deploy dry-run in GitHub Actions.
 - `.github/workflows/cloudflare-provision.yml` — creates or reuses R2/D1 resources, updates tracked config, applies schema, and deploys the Worker.
 
