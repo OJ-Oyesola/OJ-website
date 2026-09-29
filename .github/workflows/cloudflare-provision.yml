@@ -158,11 +158,19 @@ jobs:
           deploy_log=$(mktemp)
           npx wrangler deploy 2>&1 | tee "$deploy_log"
           status=${PIPESTATUS[0]}
-          worker_url=$(node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const matches = [...text.matchAll(/https?:\/\/[A-Za-z0-9.-]+\.workers\.dev\b/g)].map((match) => match[0]); if (matches.length) process.stdout.write(matches[matches.length - 1]);' "$deploy_log")
+          worker_url=$(python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME" < "$deploy_log")
+          if [ -z "$worker_url" ]; then
+            worker_url=$(npx wrangler deployments status --name "$CF_WORKER_NAME" --json | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
+          fi
+          if [ -z "$worker_url" ]; then
+            worker_url=$(npx wrangler whoami --account "$CLOUDFLARE_ACCOUNT_ID" --json | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
+          fi
           if [ -n "$worker_url" ]; then
             echo "worker_url=$worker_url" >> "$GITHUB_OUTPUT"
             echo "CF_WORKER_URL=$worker_url" >> "$GITHUB_ENV"
             echo "Worker URL: $worker_url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Worker URL could not be detected automatically in this run." >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$status" -ne 0 ]; then
             echo "Worker deployment failed in this run; resources and schema were still provisioned." >> "$GITHUB_STEP_SUMMARY"
