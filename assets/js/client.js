@@ -16,6 +16,9 @@
     return state.base + "/" + path.split("/").map(encodeURIComponent).join("/");
   }
   function photoName(i) { return slugTitle() + "-" + String(i + 1).padStart(3, "0") + ".jpg"; }
+  function closeDialog(dialog) {
+    if (dialog && dialog.open) dialog.close();
+  }
 
   async function galleryHash(email, code) {
     var bytes = new TextEncoder().encode(email + "|" + code + "|" + CFG.salt);
@@ -141,7 +144,7 @@
   }
 
   function signOut() {
-    $("#photoLightbox").close();
+    closeDialog($("#photoLightbox"));
     state.lbIndex = -1;
     if (state.download) {
       state.download.controller.abort();
@@ -318,10 +321,11 @@
       "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
   }
   function openLightbox(i) {
-    if (!photos()[i]) return;
+    var lightbox = $("#photoLightbox");
+    if (!photos()[i] || !lightbox) return;
     state.lbIndex = i;
     renderLB();
-    $("#photoLightbox").showModal();
+    if (!lightbox.open) lightbox.showModal();
   }
   function renderLB() {
     var photo = photos()[state.lbIndex];
@@ -372,14 +376,14 @@
       downloadIndices(Array.from(state.selected).sort(function (a, b) { return a - b; }), this);
     });
     var lightbox = $("#photoLightbox");
-    $("#plClose").addEventListener("click", function () { lightbox.close(); });
+    $("#plClose").addEventListener("click", function () { closeDialog(lightbox); });
     $("#plPrev").addEventListener("click", function () { moveLB(-1); });
     $("#plNext").addEventListener("click", function () { moveLB(1); });
     $("#plSelect").addEventListener("click", function () {
       state.selectMode = true;
       toggleSelect(state.lbIndex);
     });
-    lightbox.addEventListener("click", function (e) { if (e.target === lightbox) lightbox.close(); });
+    lightbox.addEventListener("click", function (e) { if (e.target === lightbox) closeDialog(lightbox); });
     lightbox.addEventListener("close", function () {
       if (lightbox.open) return;
       state.lbIndex = -1;

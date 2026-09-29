@@ -1,0 +1,20 @@
+name = "oj-website-api"
+main = "workers/api/index.js"
+compatibility_date = "2026-09-29"
+workers_dev = true
+minify = true
+
+[observability.logs]
+enabled = true
+
+# Uncomment and replace these when you are ready to bind Cloudflare storage.
+#
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "oj-website-media"
+# preview_bucket_name = "oj-website-media-preview"
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "oj-website"
+# database_id = "replace-with-your-d1-database-id"

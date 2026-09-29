@@ -6,9 +6,11 @@
     var input = document.getElementById("c-sig");
     var preview = document.getElementById("sigPreview");
     if (input && preview) {
-      input.addEventListener("input", function () {
+      function updateSignaturePreview() {
         preview.textContent = input.value;
-      });
+      }
+      input.addEventListener("input", updateSignaturePreview);
+      updateSignaturePreview();
     }
 
     var form = document.getElementById("contractForm");

@@ -12,6 +12,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <!-- LEGAL-SHELL:HEADER:start -->
   <header class="page-header">
     <div class="container inner">
       <a href="index.html" class="brand">OJ_Oyesola</a>
@@ -26,6 +27,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
     </div>
   </header>
+  <!-- LEGAL-SHELL:HEADER:end -->
 
   <main id="main" class="doc-page">
     <div class="container">
@@ -33,6 +35,7 @@
         <p class="eyebrow">Booking Agreement</p>
         <h1 class="display-2">Sign your <em>contract</em></h1>
         <p class="lead">Please read the agreement below carefully, fill in your details, and sign to confirm your booking.</p>
+        <p class="doc-meta">Last updated: September 2026</p>
       </div>
 
       <div class="doc-body">
@@ -60,7 +63,7 @@
         <p>The Photographer retains absolute copyright to all images produced under this agreement. The Client is granted a personal-use license to download, print, and share images online for non-commercial purposes. The Client shall not alter, edit, crop, or apply filters to the final delivered images, as this misrepresents the Photographer's artistry and brand.</p>
 
         <h2>5. Delivery &amp; Turnaround</h2>
-        <p>Standard turnaround time is 1–2 weeks for portrait sessions and 2–4 weeks for weddings and events. Faster delivery, unless previously agreed upon, attracts a 25% rush fee. All images are delivered via a private, high-resolution online gallery, which will remain active for twelve (12) months from the date of delivery.</p>
+        <p>Standard turnaround time is 1–2 weeks for portrait sessions and 2–4 weeks for weddings and events. Faster delivery, unless previously agreed upon, attracts a 25% rush fee. All images are delivered via an access-coded, high-resolution online gallery, which will remain active for twelve (12) months from the date of delivery.</p>
 
         <h2>6. Artistic Discretion</h2>
         <p>The Client acknowledges they have reviewed the Photographer's portfolio and are booking based on the Photographer's established aesthetic, editing style, and artistic vision. The Photographer retains full creative control over the editing process. No unedited or RAW files will be provided under any circumstances.</p>
@@ -72,7 +75,7 @@
         <p>By signing below, the Client confirms that they have read, understood, and agree to be bound by all terms and conditions set forth in this agreement.</p>
 
         <!-- ===== Signature form ===== -->
-        <div class="form-panel" style="margin-top:3.5rem" id="signPanel">
+        <div class="form-panel form-panel--offset" id="signPanel">
           <form id="contractForm" method="post" novalidate>
             <div class="form-grid">
               <div class="field">
@@ -119,7 +122,7 @@
                 </div>
               </div>
               <div class="span-2">
-                <button type="submit" class="btn btn--primary" style="width:100%">Sign &amp; Submit Agreement</button>
+                <button type="submit" class="btn btn--primary btn--block">Sign &amp; Submit Agreement</button>
                 <p class="form-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg>Your signed agreement is submitted to the photographer. Please request a copy for your records.</p>
               </div>
             </div>
@@ -142,14 +145,16 @@
     </div>
   </main>
 
-  <footer class="site-footer">
+  <!-- LEGAL-SHELL:FOOTER:start -->
+  <footer class="site-footer site-footer--minimal">
     <div class="container">
-      <div class="footer-bottom" style="border-top:0">
+      <div class="footer-bottom">
         <span>© <span id="year">2026</span> OJ_Oyesola Photography. All rights reserved.</span>
         <a class="to-top" href="#main">Back to top <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
       </div>
     </div>
   </footer>
+  <!-- LEGAL-SHELL:FOOTER:end -->
 
   <div class="toast" id="toast" role="status" aria-live="polite">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
