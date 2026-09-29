@@ -10,10 +10,10 @@ enabled = true
 [vars]
 API_VERSION = "2026-09-29"
 
-[[r2_buckets]]
-binding = "MEDIA"
-bucket_name = "oj-website-media-039fcee5"
-preview_bucket_name = "oj-website-media-preview-039fcee5"
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "oj-website-media"
+# preview_bucket_name = "oj-website-media-preview"
 
 [[d1_databases]]
 binding = "DB"
