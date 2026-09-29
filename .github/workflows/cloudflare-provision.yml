@@ -61,9 +61,13 @@ jobs:
           set -euo pipefail
           ensure_bucket() {
             local name="$1"
-            if npx wrangler r2 bucket info "$name" >/dev/null 2>&1; then
+            local output
+            if output=$(npx wrangler r2 bucket info "$name" 2>&1); then
+              echo "$output"
               echo "R2 bucket already exists: $name"
             else
+              echo "$output"
+              echo "Creating R2 bucket: $name"
               npx wrangler r2 bucket create "$name" --location "$R2_LOCATION"
             fi
           }
