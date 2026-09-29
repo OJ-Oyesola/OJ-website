@@ -87,6 +87,7 @@ Key files:
 
 - `wrangler.toml` — Worker config and Cloudflare bindings.
 - `workers/api/index.js` — Worker API routes.
+- `admin.html` + `assets/js/admin.js` — browser-based helper for connecting to the Worker admin API and importing static gallery folders.
 - `db/migrations/0001_initial.sql` — D1 schema.
 - `cloudflare/resources.json` — tracked manifest of provisioned resource names/IDs and the deployed Worker URL.
 - `.github/workflows/cloudflare-check.yml` — validates Cloudflare auth and a deploy dry-run in GitHub Actions.

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backend Gallery Admin — OJ_Oyesola Photography</title>
+  <meta name="description" content="Connect to the Cloudflare Worker backend, review galleries, and import existing static client-gallery folders.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body class="admin-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="page-header">
+    <div class="container inner">
+      <a href="index.html" class="brand">OJ_Oyesola</a>
+      <nav aria-label="Primary">
+        <a href="index.html#work">Work</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+        <a href="client.html" class="nav-cta">Client Access</a>
+      </nav>
+      <a class="menu-link" href="index.html">Menu
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
+    </div>
+  </header>
+
+  <main id="main" class="admin-main">
+    <div class="container">
+      <section class="admin-hero">
+        <p class="eyebrow">Cloudflare Backend</p>
+        <h1 class="display-2">Gallery <em>Admin Helper</em></h1>
+        <p class="lead">Connect to the Worker API, review backend galleries, and import existing <code>galleries/&lt;hash&gt;/</code> folders without hand-calling endpoints.</p>
+      </section>
+
+      <div class="admin-grid">
+        <section class="admin-card" aria-labelledby="connectTitle">
+          <div class="admin-card__head">
+            <h2 id="connectTitle">1. Connect to the Worker</h2>
+            <p>Use a discovered Worker URL or paste one manually, then provide your admin API token.</p>
+          </div>
+          <form id="connectForm" class="admin-form" novalidate>
+            <div class="field">
+              <label for="apiBase">Worker API Base URL</label>
+              <input id="apiBase" name="apiBase" type="url" placeholder="https://oj-website-api.example.workers.dev" required>
+            </div>
+            <div class="field">
+              <label for="adminToken">Admin API Token</label>
+              <input id="adminToken" name="adminToken" type="password" autocomplete="off" placeholder="Bearer token value" required>
+            </div>
+            <div class="admin-inline-actions">
+              <button type="submit" class="btn btn--primary btn--sm" id="connectBtn">Save &amp; Load Galleries</button>
+              <button type="button" class="btn btn--ghost btn--sm" id="useDiscoveredBtn">Use Discovered URL</button>
+            </div>
+            <p class="admin-status" id="connectStatus" role="status"></p>
+          </form>
+        </section>
+
+        <section class="admin-card" aria-labelledby="importTitle">
+          <div class="admin-card__head">
+            <h2 id="importTitle">2. Import a Static Gallery Folder</h2>
+            <p>Select one exported <code>galleries/&lt;hash&gt;/</code> folder. The importer reads <code>data.json</code> and uploads its grid, full, and thumb assets.</p>
+          </div>
+          <form id="importForm" class="admin-form" novalidate>
+            <div class="field">
+              <label for="galleryFolder">Static Gallery Folder</label>
+              <input id="galleryFolder" name="galleryFolder" type="file" webkitdirectory directory multiple required>
+            </div>
+            <div class="field">
+              <label for="galleryVisibility">Backend Visibility</label>
+              <select id="galleryVisibility" name="galleryVisibility">
+                <option value="private" selected>Private</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+            <div class="admin-preview" id="importPreview" hidden>
+              <h3>Detected Gallery</h3>
+              <dl>
+                <div><dt>Hash</dt><dd id="previewHash"></dd></div>
+                <div><dt>Slug</dt><dd id="previewSlug"></dd></div>
+                <div><dt>Title</dt><dd id="previewTitle"></dd></div>
+                <div><dt>Photos</dt><dd id="previewPhotoCount"></dd></div>
+                <div><dt>Uploads</dt><dd id="previewUploadCount"></dd></div>
+              </dl>
+            </div>
+            <div class="admin-inline-actions">
+              <button type="button" class="btn btn--ghost btn--sm" id="scanFolderBtn">Scan Folder</button>
+              <button type="submit" class="btn btn--primary btn--sm" id="importBtn">Import Into Backend</button>
+            </div>
+            <p class="admin-status" id="importStatus" role="status"></p>
+          </form>
+        </section>
+      </div>
+
+      <section class="admin-card admin-card--full" aria-labelledby="galleriesTitle">
+        <div class="admin-card__head admin-card__head--row">
+          <div>
+            <h2 id="galleriesTitle">Backend Galleries</h2>
+            <p>Refresh the gallery list after imports to confirm what is now stored in D1/R2.</p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" id="refreshGalleriesBtn">Refresh List</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Slug</th>
+                <th scope="col">Kind</th>
+                <th scope="col">Visibility</th>
+                <th scope="col">Photos</th>
+                <th scope="col">Updated</th>
+              </tr>
+            </thead>
+            <tbody id="galleryRows">
+              <tr><td colspan="6">Connect to the Worker to load galleries.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card admin-card--full" aria-labelledby="logTitle">
+        <div class="admin-card__head">
+          <h2 id="logTitle">Import Log</h2>
+          <p>Progress appears here as each backend request completes.</p>
+        </div>
+        <pre class="admin-log" id="importLog" aria-live="polite">Waiting for actions…</pre>
+      </section>
+    </div>
+  </main>
+
+  <script src="assets/js/config.js" defer></script>
+  <script src="assets/js/admin.js" defer></script>
+</body>
+</html>
