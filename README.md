@@ -116,9 +116,33 @@ Current Worker route scaffold:
 
 The public routes are read-only. Admin routes require the `ADMIN_API_TOKEN`
 Worker secret. When `clientApiBase` is configured in `assets/js/config.js`, the
-client portal now tries the Worker-backed `POST /api/client/access` flow first
-and falls back to the static `galleries/<hash>/data.json` flow if no API gallery
-match is found.
+client portal prefers the Worker-backed `POST /api/client/access` flow first and
+falls back to the static `galleries/<hash>/data.json` flow if no API gallery
+match is found. When `clientApiBase` is blank, the portal keeps the static flow
+as primary and uses `cloudflare/resources.json` as a best-effort Worker URL
+fallback if one has been persisted.
+
+### Import existing static client galleries into D1/R2
+
+After the Worker is deployed and `ADMIN_API_TOKEN` is configured, existing
+`galleries/<hash>/` folders can be imported into the backend:
+
+```bash
+npm run import:client-galleries -- \
+  --api-base https://your-worker.workers.dev \
+  --admin-token "$ADMIN_API_TOKEN"
+```
+
+Notes:
+
+- With no paths passed, the importer scans all `galleries/<64-hex>/` folders.
+- The folder name is preserved as `accessCodeHash`, so existing client login
+  hashes continue to work.
+- Each photo uploads its `grid`, `full`, and `thumb` variants to R2 and writes
+  matching D1 records.
+- Use `--dry-run` to preview what would be imported.
+- Use `--visibility public` only if you intentionally want those galleries to be
+  publicly readable through the Worker.
 
 ## Configuration — `assets/js/config.js`
 

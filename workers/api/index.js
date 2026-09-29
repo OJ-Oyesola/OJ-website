@@ -76,6 +76,51 @@ async function getGalleryBySlug(env, slug) {
   return row || null;
 }
 
+function captionFromMediaRow(photo) {
+  const title = String(photo.title || "").trim();
+  if (title && !/^photo-\d+$/i.test(title)) return title;
+  return String(photo.altText || "").trim();
+}
+
+function groupClientMediaRows(request, rows, accessHash) {
+  const groups = [];
+  const lookup = new Map();
+  for (const photo of rows || []) {
+    const key = String(photo.title || "").trim() || `position-${photo.position}-${photo.id}`;
+    let group = lookup.get(key);
+    if (!group) {
+      group = {
+        id: photo.id,
+        position: Number(photo.position || 0),
+        caption: captionFromMediaRow(photo),
+        w: Number(photo.width || 0),
+        h: Number(photo.height || 0),
+        full: "",
+        grid: "",
+        thumb: ""
+      };
+      lookup.set(key, group);
+      groups.push(group);
+    }
+    const assetUrl = mediaUrl(request, photo.objectKey, accessHash);
+    if (photo.variant === "grid") group.grid = assetUrl;
+    else if (photo.variant === "thumb") group.thumb = assetUrl;
+    else group.full = assetUrl;
+    if (!group.caption) group.caption = captionFromMediaRow(photo);
+    if (!group.w && Number(photo.width || 0) > 0) group.w = Number(photo.width);
+    if (!group.h && Number(photo.height || 0) > 0) group.h = Number(photo.height);
+  }
+  return groups.map((group) => ({
+    id: group.id,
+    full: group.full || group.grid || group.thumb || "",
+    grid: group.grid || group.full || group.thumb || "",
+    thumb: group.thumb || group.grid || group.full || "",
+    caption: group.caption,
+    w: group.w,
+    h: group.h
+  }));
+}
+
 async function getClientGalleryByHash(request, env, accessHash) {
   requireDb(env);
   const normalizedHash = String(accessHash || "").trim().toLowerCase();
@@ -103,25 +148,11 @@ async function getClientGalleryByHash(request, env, accessHash) {
       slug: gallery.slug,
       title: gallery.title,
       subtitle: gallery.subtitle,
-      date: "",
+      date: gallery.category || "",
       expires: gallery.expiresAt || "",
       expired: isExpired(gallery.expiresAt),
       externalUrl: gallery.externalUrl || "",
-      photos: (results || []).map((photo) => {
-        const assetUrl = mediaUrl(request, photo.objectKey, normalizedHash);
-        return {
-          id: photo.id,
-          full: assetUrl,
-          grid: assetUrl,
-          caption: photo.title || photo.altText || "",
-          w: Number(photo.width || 0),
-          h: Number(photo.height || 0),
-          bytes: Number(photo.bytes || 0),
-          mimeType: photo.mimeType,
-          variant: photo.variant,
-          isPublic: Boolean(photo.isPublic)
-        };
-      })
+      photos: groupClientMediaRows(request, results || [], normalizedHash)
     }
   });
 }

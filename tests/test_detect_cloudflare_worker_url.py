@@ -36,6 +36,12 @@ class DetectCloudflareWorkerUrlTests(unittest.TestCase):
             "https://oj-website-api.demoacct.workers.dev",
         )
 
+    def test_builds_url_from_account_subdomain_response(self):
+        self.assertEqual(
+            self.detect('{"result":{"subdomain":"demoacct"},"success":true}'),
+            "https://oj-website-api.demoacct.workers.dev",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

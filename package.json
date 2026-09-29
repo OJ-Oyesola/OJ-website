@@ -7,6 +7,7 @@
     "lint": "eslint .",
     "check": "npm run lint && python3 tools/build_galleries.py --check && python3 tools/sync_legal_shell.py --check && python3 tools/check_site.py && python3 -m unittest discover -s tests -p 'test_*.py'",
     "cf:dry-run": "npx wrangler deploy --dry-run",
+    "import:client-galleries": "node tools/import_client_galleries.js",
     "test": "playwright test"
   },
   "engines": {

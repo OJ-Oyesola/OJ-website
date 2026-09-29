@@ -160,12 +160,22 @@ jobs:
           status=${PIPESTATUS[0]}
           worker_url=$(python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME" < "$deploy_log")
           if [ -z "$worker_url" ]; then
-            worker_url=$(npx wrangler deployments status --name "$CF_WORKER_NAME" --json | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
-          fi
-          if [ -z "$worker_url" ]; then
+            script_subdomain=$(curl -fsS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$CF_WORKER_NAME/subdomain" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" || true)
+            script_enabled=$(printf '%s' "$script_subdomain" | python3 -c 'import json,sys; raw=sys.stdin.read().strip(); data=json.loads(raw) if raw else {}; print("true" if data.get("result", {}).get("enabled") else "")' 2>/dev/null || true)
+            if [ "$script_enabled" != "true" ]; then
+              curl -fsS -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$CF_WORKER_NAME/subdomain" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data '{"enabled":true}' >/dev/null || true
+            fi
             worker_url=$(curl -fsS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               -H "Content-Type: application/json" | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
+          fi
+          if [ -z "$worker_url" ]; then
+            worker_url=$(npx wrangler deployments status --name "$CF_WORKER_NAME" --json | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
           fi
           if [ -z "$worker_url" ]; then
             worker_url=$(npx wrangler whoami --account "$CLOUDFLARE_ACCOUNT_ID" --json | python3 tools/detect_cloudflare_worker_url.py --worker-name "$CF_WORKER_NAME")
