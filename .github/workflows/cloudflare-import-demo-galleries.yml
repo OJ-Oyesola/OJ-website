@@ -64,7 +64,15 @@ jobs:
           done
           if [ "$success" -ne 1 ]; then
             tail -n 20 preflight.log
-            echo "::error::Worker admin API preflight failed after retries."
+            detail=$(python3 - <<'EOF'
+          from pathlib import Path
+          text = Path('preflight.log').read_text(encoding='utf-8', errors='replace').strip().splitlines()
+          tail = ' | '.join(text[-20:])
+          tail = tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print(tail)
+          EOF
+            )
+            echo "::error::Worker admin API preflight failed after retries. ${detail}"
             exit 1
           fi
       - name: Import demo galleries into Worker backend
