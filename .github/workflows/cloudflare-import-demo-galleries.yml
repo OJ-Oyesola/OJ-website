@@ -34,24 +34,44 @@ jobs:
           ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_ADMIN_TOKEN }}
         run: |
           export ADMIN_API_BASE=$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync("cloudflare/resources.json", "utf8")); process.stdout.write(data.worker.url);')
-          node - <<'EOF'
-          (async () => {
-            const base = process.env.ADMIN_API_BASE;
-            const token = process.env.ADMIN_API_TOKEN;
-            const health = await fetch(base + '/health');
-            const healthText = await health.text();
-            console.log('Health:', health.status, healthText);
-            const admin = await fetch(base + '/api/admin/galleries', {
-              headers: { authorization: `Bearer ${token}` }
+          success=0
+          for attempt in 1 2 3 4 5 6; do
+            echo "Preflight attempt $attempt..."
+            if ATTEMPT="$attempt" node - <<'EOF' > preflight.log 2>&1
+            (async () => {
+              const attempt = process.env.ATTEMPT;
+              const base = process.env.ADMIN_API_BASE;
+              const token = process.env.ADMIN_API_TOKEN;
+              const health = await fetch(base + '/health');
+              const healthText = await health.text();
+              console.log(`Health [attempt ${attempt}]: ${health.status} ${healthText}`);
+              const admin = await fetch(base + '/api/admin/galleries', {
+                headers: { authorization: `Bearer ${token}` }
+              });
+              const adminText = await admin.text();
+              console.log(`Admin galleries [attempt ${attempt}]: ${admin.status} ${adminText}`);
+              if (!admin.ok) {
+                const snippet = String(adminText || '').replace(/\s+/g, ' ').slice(0, 300);
+                throw new Error(`Worker admin API preflight failed with ${admin.status}: ${snippet}`);
+              }
+            })().catch((error) => {
+              console.error(error && error.message ? error.message : error);
+              process.exit(1);
             });
-            const adminText = await admin.text();
-            console.log('Admin galleries:', admin.status, adminText);
-            if (!admin.ok) throw new Error(`Worker admin API preflight failed with ${admin.status}`);
-          })().catch((error) => {
-            console.error(error && error.message ? error.message : error);
-            process.exit(1);
-          });
-          EOF
+            EOF
+            then
+              cat preflight.log
+              success=1
+              break
+            fi
+            cat preflight.log
+            sleep 10
+          done
+          if [ "$success" -ne 1 ]; then
+            tail -n 20 preflight.log
+            echo "::error::Worker admin API preflight failed after retries."
+            exit 1
+          fi
       - name: Import demo galleries into Worker backend
         id: import
         continue-on-error: true
